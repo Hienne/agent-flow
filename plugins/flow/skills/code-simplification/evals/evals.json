@@ -1,0 +1,49 @@
+{
+  "skill_name": "code-simplification",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Simplify the changed code for task user-profile. This is the whole diff; UserCard and UserList are the only callers of the new code.\n\n--- /dev/null\n+++ b/src/users/user-service.ts\n@@ -0,0 +1,5 @@\n+import { apiClient, type UserDto } from '../api/client';\n+\n+export function fetchUser(id: string): Promise<UserDto> {\n+  return apiClient.getUser(id);\n+}\n--- /dev/null\n+++ b/src/users/user-view-model.ts\n@@ -0,0 +1,11 @@\n+import type { UserDto } from '../api/client';\n+\n+export interface UserViewModel {\n+  id: string;\n+  name: string;\n+  email: string;\n+}\n+\n+export function toUserViewModel(dto: UserDto): UserViewModel {\n+  return { id: dto.id, name: dto.name, email: dto.email };\n+}\n--- a/src/users/UserCard.tsx\n+++ b/src/users/UserCard.tsx\n@@ -1,6 +1,9 @@\n-import { apiClient } from '../api/client';\n+import { fetchUser } from './user-service';\n+import { toUserViewModel, type UserViewModel } from './user-view-model';\n...\n-  const user = await apiClient.getUser(id);\n+  const user: UserViewModel = toUserViewModel(await fetchUser(id));\n--- a/src/users/UserList.tsx\n+++ b/src/users/UserList.tsx\n@@ -1,6 +1,9 @@\n-import { apiClient } from '../api/client';\n+import { fetchUser } from './user-service';\n+import { toUserViewModel } from './user-view-model';\n...\n-  const users = await Promise.all(ids.map((id) => apiClient.getUser(id)));\n+  const users = (await Promise.all(ids.map(fetchUser))).map(toUserViewModel);\n--- /dev/null\n+++ b/src/users/user-view-model.test.ts\n@@ -0,0 +1,4 @@\n+it('maps every field', () => {\n+  expect(toUserViewModel({ id: '1', name: 'Ada', email: 'a@x.io' }))\n+    .toEqual({ id: '1', name: 'Ada', email: 'a@x.io' });\n+});\n\nUserDto is exactly { id: string; name: string; email: string }. UserCard.test.tsx and UserList.test.tsx assert the rendered name and email and are unchanged by the diff.",
+      "expected_output": "Collapses the pass-through fetchUser wrapper and the UserViewModel/toUserViewModel pair that only mirrors UserDto, migrates UserCard and UserList to apiClient.getUser and UserDto, drops the mapper-only test, and leaves the rendered-output tests unchanged.",
+      "files": [],
+      "assertions": [
+        "fetchUser and src/users/user-service.ts are removed, and callers call apiClient.getUser directly.",
+        "UserViewModel and toUserViewModel are removed, and callers use UserDto directly.",
+        "Both UserCard.tsx and UserList.tsx are updated, with no leftover import, alias, or re-export of a removed symbol.",
+        "user-view-model.test.ts is deleted because it only asserted the removed mapper.",
+        "UserCard.test.tsx and UserList.test.tsx are left unchanged.",
+        "Each removal is justified by a pass-through or field-mirroring finding, or by a deletion-test result, not by line count."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Simplify the changed code for task address-lookup. The diff adds src/geo/geocoder.ts with a Geocoder port (geocode(address): Promise<Coordinates>) and one production implementation, MapboxGeocoder, in src/geo/mapbox-geocoder.ts. MapboxGeocoder is the only module that imports @mapbox/mapbox-sdk; it converts the SDK's feature collections into the domain Coordinates type and translates MapboxError rate-limit and not-found responses into the domain GeocodeFailure union. CheckoutService and StoreLocator depend on Geocoder, and the tests also inject a FakeGeocoder. No second geocoding provider is planned. Decide what to do with the Geocoder port.",
+      "expected_output": "Keeps the single-implementation Geocoder port because it contains the Mapbox SDK and owns error translation, lists it under abstractions intentionally retained with that boundary reason, and does not count the test fake as evidence or propose hypothetical providers.",
+      "files": [],
+      "assertions": [
+        "The Geocoder port is kept, and MapboxGeocoder is not inlined into CheckoutService or StoreLocator.",
+        "The port is listed under abstractions intentionally retained.",
+        "The retention reason cites containment of the external Mapbox SDK or the translation of MapboxError into GeocodeFailure.",
+        "FakeGeocoder is not given as the reason to keep the port.",
+        "No second geocoding implementation, provider registry, or configuration option is proposed."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "You are running as the read-only flow:code-simplifier subagent for task invoice-export. You cannot edit files; the parent applies your edits and reruns flow verify. This is the task's whole diff; exportInvoices is called only from src/billing/billing-controller.ts:42, and no other code references ExportStrategy or exportStrategyRegistry.\n\n--- /dev/null\n+++ b/src/billing/export-strategy.ts\n@@ -0,0 +1,12 @@\n+import type { Invoice } from './invoice';\n+\n+export interface ExportStrategy {\n+  format: string;\n+  export(invoices: Invoice[]): string;\n+}\n+\n+export const exportStrategyRegistry = new Map<string, ExportStrategy>();\n+\n+export function registerExportStrategy(strategy: ExportStrategy): void {\n+  exportStrategyRegistry.set(strategy.format, strategy);\n+}\n--- /dev/null\n+++ b/src/billing/csv-export.ts\n@@ -0,0 +1,11 @@\n+import { registerExportStrategy } from './export-strategy';\n+import type { Invoice } from './invoice';\n+\n+registerExportStrategy({\n+  format: 'csv',\n+  export(invoices: Invoice[]): string {\n+    const header = 'id,customer,total';\n+    const rows = invoices.map((i) => `${i.id},${i.customer},${i.total}`);\n+    return [header, ...rows].join('\\n');\n+  },\n+});\n--- /dev/null\n+++ b/src/billing/export-invoices.ts\n@@ -0,0 +1,16 @@\n+import './csv-export';\n+import { exportStrategyRegistry } from './export-strategy';\n+import type { Invoice } from './invoice';\n+\n+export function exportInvoices(invoices: Invoice[]): string {\n+  if (invoices.length > 0) {\n+    const strategy = exportStrategyRegistry.get('csv');\n+    if (strategy) {\n+      return strategy.export(invoices);\n+    } else {\n+      throw new Error('No exporter for csv');\n+    }\n+  } else {\n+    return '';\n+  }\n+}\n\nWrite your report.",
+      "expected_output": "A report-mode review that lists the single-implementation ExportStrategy interface and registry as Blocking and the nested if/else as Non-blocking guard clauses. Each proposal has file:line, a before/after snippet, and the behavior fence it preserves. The report claims no verification and ends with a FLOW-REVIEW-RESULT line whose counts match the proposals.",
+      "files": [],
+      "assertions": [
+        "The proposals are grouped under a Blocking heading and a Non-blocking heading.",
+        "Removing ExportStrategy, exportStrategyRegistry, or registerExportStrategy in favour of a direct CSV export is listed as Blocking.",
+        "Every proposal gives a file:line location in one of the diffed files.",
+        "Every proposal includes a before/after snippet or exact edit steps.",
+        "Every proposal names the behavior it preserves, such as the empty-input return of '' or the CSV header and row format.",
+        "The report proposes edits and does not claim to have applied them.",
+        "The report does not claim that any test, build, or flow verify ran or passed.",
+        "The last line is exactly FLOW-REVIEW-RESULT task=invoice-export blocking=<n> non-blocking=<n>, with nothing after it.",
+        "The blocking and non-blocking counts in that line equal the number of proposals listed under each heading."
+      ]
+    }
+  ]
+}
