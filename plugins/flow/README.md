@@ -4,9 +4,21 @@ Core workflow plugin: the `flow` task harness (`dist/flow.mjs`, on `PATH` as `fl
 
 ## Setup
 
-Run `flow init` at the project root. It detects the layout (`single`: the root is one workspace; `umbrella`: the root groups nested workspaces) and the unit adapters, writes `.flow/config.json` (an existing one is kept), and merges `.claude/settings.json`: the marketplace as a local `directory` source and `enabledPlugins` for `flow`, `flow-ui` and each `--stack <name>` (`stack-<name>`). Other settings keys stay as they are; the changes are printed as `+`/`~` lines, and `--dry-run` prints them without writing. It warns when the project already has hooks on the events flow handles, or agents named like flow's.
+Add the marketplace and install the plugins in Claude Code (the same on macOS, Linux and Windows; needs Node 18.19 or later on `PATH`):
 
-The marketplace directory is the checkout the running `flow` comes from, else a registered local directory marketplace that offers `flow`; `--marketplace <dir>` overrides both.
+```
+/plugin marketplace add Hienne/agent-flow
+/plugin install flow@agentflow
+/plugin install flow-ui@agentflow
+```
+
+Then run `flow init` at the project root. It detects the layout (`single`: the root is one workspace; `umbrella`: the root groups nested workspaces) and the unit adapters, writes `.flow/config.json` (an existing one is kept), and merges `.claude/settings.json`: the marketplace source (as Claude Code registered it, `github` or local `directory`) and `enabledPlugins` for `flow`, `flow-ui` and each `--stack <name>` (`stack-<name>`). Other settings keys stay as they are; the changes are printed as `+`/`~` lines, and `--dry-run` prints them without writing. It warns when the project already has hooks on the events flow handles, or agents named like flow's.
+
+The marketplace is the checkout the running `flow` comes from, else a marketplace registered in Claude Code (`known_marketplaces.json`) that offers `flow`; `--marketplace <dir>` overrides both with a local directory.
+
+## Releasing
+
+Claude Code updates an installed plugin only when its `version` changes. Bump `version` in the plugin's `.claude-plugin/plugin.json` and in its `.claude-plugin/marketplace.json` entry, run `npm run build`, and commit the rebuilt `dist/`; CI fails when the bundles or the two versions disagree.
 
 `flow init --shim` writes a user-level `flow` launcher (`flow`, `flow.cmd`, `flow.mjs`) to `~/.local/bin`, for a terminal outside Claude Code, where the plugin's `bin/` is not on `PATH` (for example to run `flow review waive`). The launcher reads `~/.claude/plugins/installed_plugins.json` at each run and picks the project install that contains the cwd, else the user install, so plugin updates need no new shim.
 
@@ -56,8 +68,7 @@ The defaults are the values shown for `review`, and the adapter's extensions for
 | `flow:code-reviewer` | opus | Formal review, Standards and Spec axes (`flow:code-review`). |
 | `flow:code-simplifier` | sonnet | Behaviour-preserving simplification, report mode (`flow:code-simplification`). |
 | `flow:feature-reviewer` | opus | Whole-feature review once every ticket is `done`. |
-| `flow:solution-advisor` | opus | One recommended solution for one blocked decision. |
 
 ### Models are fixed
 
-Claude Code does not substitute `${user_config.*}` in an agent's `model` frontmatter (checked in the plugin spike), so the plugin declares no `review_model`, `simplify_model` or `advisor_model` option: each agent runs on the model in the table. To run one on another model, edit its `model:` line in the installed copy of `agents/<name>.md`, and expect a plugin update to overwrite that edit.
+Claude Code does not substitute `${user_config.*}` in an agent's `model` frontmatter (checked in the plugin spike), so the plugin declares no `review_model` or `simplify_model` option: each agent runs on the model in the table. To run one on another model, edit its `model:` line in the installed copy of `agents/<name>.md`, and expect a plugin update to overwrite that edit.

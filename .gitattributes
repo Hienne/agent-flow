@@ -1,0 +1,4 @@
+# LF everywhere so sh launchers and bundles run on macOS and Linux after a Windows checkout.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.bat text eol=crlf

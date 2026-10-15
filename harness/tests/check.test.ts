@@ -82,7 +82,7 @@ test('core rules list exactly the principles, each file carries its ID, and the 
     assert.ok(index.includes(`\`${id}\``), `${id} is missing from the index`);
     assert.ok(readFileSync(join(directory, `${id}.md`), 'utf8').startsWith(`# ${id}`), `${id} file heading`);
   }
-  for (const agent of ['code-reviewer', 'code-simplifier', 'feature-reviewer', 'solution-advisor']) {
+  for (const agent of ['code-reviewer', 'code-simplifier', 'feature-reviewer']) {
     assert.match(readFileSync(join(plugin, 'agents', `${agent}.md`), 'utf8'), /^ {2}- flow:principles$/m, agent);
   }
 });

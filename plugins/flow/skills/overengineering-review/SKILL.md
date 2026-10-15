@@ -1,6 +1,6 @@
 ---
 name: overengineering-review
-description: Preflight designs before implementation when a change may introduce or materially expand public seams, shared abstractions, configurable workflows, plugin systems, strategy layers, registries, factories, or framework-like extension mechanisms. Use for YAGNI, KISS, the dumb version, Rule of Three, abstraction budgets, and deletion-test decisions; post-implementation cleanup belongs to code-simplification.
+description: Preflight designs before implementation when a change may introduce or materially expand public seams, shared abstractions, configurable workflows, plugin systems, strategy layers, registries, factories, or framework-like extension mechanisms. Use for YAGNI, KISS, the dumb version, Rule of Three, and deletion-test decisions; post-implementation cleanup belongs to code-simplification.
 ---
 
 # Over-engineering Preflight
@@ -28,7 +28,6 @@ Use YAGNI and the Rule of Three as evidence rules:
 - Two materially different production consumers may justify a seam when they already repeat the same invariant or lifecycle. Never manufacture a third duplicate.
 - A test fake is not a production consumer.
 - One implementation may sit behind a boundary that contains an external protocol, framework requirement, security or transaction boundary, or committed public contract.
-- Numerical budgets are tripwires that request explanation, not automatic defects.
 
 ## Workflow
 
@@ -61,7 +60,7 @@ Completion: every accepted seam traces to a current requirement, proven duplicat
 
 ## Output
 
-Write a concise design decision:
+Write a concise design decision, and record its outcome and rejected extension points as a `DEC-###` in the feature's `decisions.md` (the task worklog when there is none) so they survive into implementation:
 
 ```markdown
 # Over-engineering preflight
@@ -69,7 +68,7 @@ Write a concise design decision:
 ## Dumb version
 
 ## Abstraction ledger
-| Candidate | Production evidence | Knowledge hidden | Deletion effect | Decision |
+| Candidate | Current production consumers | Knowledge hidden | Real variation or boundary | Deletion effect | Decision |
 
 ## Ownership and precedence
 

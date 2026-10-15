@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      # Users install the committed bundles, so they must match the sources.
+      - run: npm run build
+      - run: git diff --exit-code -- plugins/flow/dist plugins/stack-hdt-angular/dist
+      - run: node plugins/flow/dist/flow.mjs check .
+      # Claude Code updates an installed plugin only when its version changes; the two manifests must agree.
+      - name: plugin versions match the marketplace
+        shell: bash
+        run: |
+          node -e '
+            const fs = require("fs");
+            const market = JSON.parse(fs.readFileSync(".claude-plugin/marketplace.json", "utf8"));
+            const wrong = market.plugins.filter((p) => JSON.parse(fs.readFileSync(`${p.source}/.claude-plugin/plugin.json`, "utf8")).version !== p.version);
+            if (wrong.length) { console.error("version mismatch:", wrong.map((p) => p.name).join(", ")); process.exit(1); }
+          '

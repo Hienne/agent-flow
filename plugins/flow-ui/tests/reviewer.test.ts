@@ -10,7 +10,7 @@ function engine(on: any) {
 
 test('without --reviewer the feature reviewer is refused', async ($: any, on: any) => {
   engine(on)
-  await $.prompt.submit({ text: '/flow:implement .scratch/f/issues/01-a.md --full --advisor' })
+  await $.prompt.submit({ text: '/flow:implement .scratch/f/issues/01-a.md --full' })
 
   expect((await $.tool.call(REVIEWER_CALL)).deny).toBeDefined()
 })

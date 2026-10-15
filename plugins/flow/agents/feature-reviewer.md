@@ -40,7 +40,7 @@ Do not review a partial feature, and do not "review what is done so far".
 
 ## Gather the change
 
-1. List the tasks of the feature: `<artifacts>/<feature>-NN/task.json` and `<artifacts>/<feature>/worklog.md` where they exist. Run `flow task status <task>` for the last one; its `WORKTREE` lines give each workspace root.
+1. List the tasks of the feature: each `<artifacts>/<feature>-NN/` with its `task.json` and `worklog.md`, or `<artifacts>/<feature>/` when the feature ran as one task. Run `flow task status <task>` for the last one; its `WORKTREE` lines give each workspace root.
 2. For each workspace root, take the start commit from `baseline.workspaceHeads` of the **lowest-numbered** task and run `git -C <workspace root> diff -M <start commit> -- <path>`, so the whole feature is one diff. Read untracked files directly. Pre-existing dirty files the worklogs list as excluded are out of scope.
 3. Read the spec, `decisions.md`, every ticket's acceptance criteria, and every task worklog. Run `flow explain <path>` for the changed paths and read the conventions it lists.
 

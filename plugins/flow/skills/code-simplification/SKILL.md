@@ -74,7 +74,7 @@ Completion: the diff contains only behavior-preserving, convention-aligned simpl
 
 ### 6. Verify
 
-Run only the affected checks with `flow verify --task <feature>`, and do not repeat a passed check unless a later change invalidates it. For UI changes, verify the actual screen when runtime access is available.
+Inside a flow task, run `flow verify --task <feature>`; otherwise run the owning unit's narrowest test and typecheck. Do not repeat a passed check unless a later change invalidates it. For UI changes, verify the actual screen when runtime access is available.
 
 Completion: focused behavior verification passes and the new version is demonstrably easier to understand. Revert any candidate that fails one of these conditions.
 
@@ -85,5 +85,5 @@ Report:
 1. complexity and unsupported abstraction removed, with the production evidence or deletion-test result, each tagged with the `flow:principles` ID it rests on, such as `[P-deletion-test]` (no ID when none matches; never invent one);
 2. abstractions intentionally retained and their boundary or current-consumer evidence;
 3. behavior fences preserved;
-4. exact verification and results;
+4. exact verification and results (apply mode; in report mode, the checks the parent should run);
 5. candidates intentionally left unchanged because risk exceeded value.
