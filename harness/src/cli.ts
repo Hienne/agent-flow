@@ -5,7 +5,7 @@ import { artifactFrontier, checkArtifacts } from './artifacts/artifacts.js';
 import { checkRepository } from './check/check.js';
 import { NotInitialisedError, initRoot, loadConfig } from './config/config.js';
 import { coreRules, sessionStartOutput } from './context/session.js';
-import { DEFAULT_SHIM_DIRECTORY, defaultMarketplace, installShim, planInit, writeInit } from './init/init.js';
+import { DEFAULT_SHIM_DIRECTORY, defaultMarketplace, directoryMarketplace, installShim, planInit, writeInit } from './init/init.js';
 import { runDoctor } from './doctor/doctor.js';
 import { collectWorkspaceChanges, reviewStats } from './inspection/changes.js';
 import { inspectTarget, inspectTaskTargets, type InspectionResult } from './inspection/inspect.js';
@@ -285,8 +285,9 @@ async function main(): Promise<void> {
     }
     const layout = option('--layout');
     if (layout !== null && layout !== 'single' && layout !== 'umbrella') return usage();
-    const marketplace = option('--marketplace') ?? defaultMarketplace();
-    if (!marketplace) throw new Error('Cannot find the agentflow marketplace directory; pass --marketplace <dir>');
+    const directory = option('--marketplace');
+    const marketplace = directory ? directoryMarketplace(directory) : defaultMarketplace();
+    if (!marketplace) throw new Error('Cannot find the agentflow marketplace; run /plugin marketplace add Hienne/agent-flow in Claude Code, or pass --marketplace <dir>');
     const plan = planInit(resolve(positional(1)[0] ?? '.'), { layout, marketplace, stacks: options('--stack').flatMap((value) => value.split(',')).map((value) => value.trim()).filter(Boolean) });
     if (!dryRun) writeInit(plan);
     output({ schemaVersion: 1, ...plan, dryRun }, (value) => [

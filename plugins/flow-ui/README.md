@@ -11,7 +11,8 @@ loads mods) and read the state `flow` writes; they never write it.
 | Advisor gate | `flow:solution-advisor` may be spawned only after a prompt containing `--advisor`, at most twice per ticket (`flow task start` resets the count). When the same check (`flow verify`, `tsc`, `jest`, `vitest`, `nx test/build/lint/...`) still fails after two edits, it tells the agent to consult the advisor, or, without the flag, shows a toast. |
 
 The project is the nearest folder above the session root holding `.flow/config.json`. The CLI the pane runs is the
-sibling plugin `../flow/dist/flow.mjs`, which holds for the local directory marketplace (the only one agentflow uses).
+sibling plugin `../flow/dist/flow.mjs` in a local directory marketplace; when the marketplace is installed from git,
+it is flow's copy under `~/.claude/plugins/cache/<marketplace>/flow/<version>`, read from `installed_plugins.json`.
 
 ## Development
 

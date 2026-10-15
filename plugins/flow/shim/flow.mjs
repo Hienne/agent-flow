@@ -3,11 +3,13 @@
 // ~/.claude/plugins/installed_plugins.json at each run, so plugin updates need no reinstall.
 // Project installs whose project contains the cwd win (deepest first), then user installs, newest first.
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 
-const fold = (path) => (process.platform === 'win32' ? resolve(path).toLowerCase() : resolve(path));
+// Real paths, so a symlinked folder (macOS /var is /private/var) matches the project it points to.
+const real = (path) => { try { return realpathSync(path); } catch { return resolve(path); } };
+const fold = (path) => (process.platform === 'win32' ? real(path).toLowerCase() : real(path));
 const cwd = fold(process.cwd());
 const contains = (project) => cwd === fold(project) || cwd.startsWith(fold(project) + sep);
 

@@ -1246,12 +1246,18 @@ function detectConfig(root, layout = null) {
   if (!nested.length) throw new Error(`No workspace of a supported build tool (${supported}) found in ${normalizePath(root)}`);
   return { layout: "umbrella", units: { adapters: nested } };
 }
-function defaultMarketplace(plugin = pluginRoot()) {
+var directoryMarketplace = (path) => ({ path: resolve9(path), source: { source: "directory", path: resolve9(path) } });
+var KNOWN_MARKETPLACES = join11(homedir(), ".claude", "plugins", "known_marketplaces.json");
+var offersFlow = (path) => readJson(join11(path, ".claude-plugin", "marketplace.json"), {}).plugins?.some((plugin) => plugin.name === "flow") ?? false;
+function defaultMarketplace(plugin = pluginRoot(), registry = KNOWN_MARKETPLACES) {
   const checkout = resolve9(plugin, "..", "..");
-  if (existsSync13(join11(checkout, ".claude-plugin", "marketplace.json"))) return checkout;
-  const known = readJson(join11(homedir(), ".claude", "plugins", "known_marketplaces.json"), {});
-  const entry = Object.values(known).find((value) => value.source?.source === "directory" && value.source.path && readJson(join11(value.source.path, ".claude-plugin", "marketplace.json"), {}).plugins?.some((plugin2) => plugin2.name === "flow"));
-  return entry?.source?.path ?? null;
+  if (existsSync13(join11(checkout, ".claude-plugin", "marketplace.json"))) return directoryMarketplace(checkout);
+  const known = readJson(registry, {});
+  for (const value of Object.values(known)) {
+    const path = value.source?.source === "directory" ? value.source.path : value.installLocation;
+    if (value.source && path && offersFlow(path)) return { path, source: value.source };
+  }
+  return null;
 }
 function hookCommands(value) {
   if (!Array.isArray(value)) return [];
@@ -1262,7 +1268,7 @@ function writeInit(plan) {
   if (plan.settings.changes.length) writeJsonAtomic(plan.settings.path, plan.settings.value);
 }
 function planInit(root, options2) {
-  const marketplacePath = resolve9(options2.marketplace);
+  const marketplacePath = options2.marketplace.path;
   const manifestPath = join11(marketplacePath, ".claude-plugin", "marketplace.json");
   if (!existsSync13(manifestPath)) throw new Error(`Not a marketplace directory: ${normalizePath(marketplacePath)} has no .claude-plugin/marketplace.json`);
   const marketplace = parseJsonObject(manifestPath, "marketplace manifest");
@@ -1284,7 +1290,7 @@ function planInit(root, options2) {
     changes.push(`${key in current ? "~" : "+"} ${section2}.${key} = ${JSON.stringify(value)}`);
     settings[section2] = { ...current, [key]: value };
   };
-  set("extraKnownMarketplaces", marketplace.name, { source: { source: "directory", path: marketplacePath } });
+  set("extraKnownMarketplaces", marketplace.name, { source: options2.marketplace.source });
   for (const plugin of plugins) set("enabledPlugins", `${plugin}@${marketplace.name}`, true);
   const hooks = settings.hooks ?? {};
   const warnings = FLOW_HOOK_EVENTS.filter((event) => hookCommands(hooks[event]).length).map((event) => `${SETTINGS_FILE} already has ${event} hooks (${hookCommands(hooks[event]).join("; ")}); flow handles ${event} too, so remove any that do the same job`);
@@ -1620,7 +1626,7 @@ import { existsSync as existsSync19 } from "node:fs";
 import { isAbsolute as isAbsolute2, join as join16, resolve as resolve13 } from "node:path";
 
 // harness/src/task/isolation.ts
-import { existsSync as existsSync16, lstatSync, readdirSync as readdirSync6, rmdirSync, symlinkSync, unlinkSync as unlinkSync2 } from "node:fs";
+import { existsSync as existsSync16, lstatSync, readdirSync as readdirSync6, realpathSync, rmdirSync, symlinkSync, unlinkSync as unlinkSync2 } from "node:fs";
 import { join as join13, relative as relative7, resolve as resolve11 } from "node:path";
 function isolationBranch(feature) {
   return `agent/${feature}`;
@@ -1652,7 +1658,8 @@ function gitOutput(cwd, args2, failure) {
   return result.stdout.trim();
 }
 function samePath(left, right) {
-  return resolve11(left).toLowerCase() === resolve11(right).toLowerCase();
+  const real = (path) => (existsSync16(path) ? realpathSync.native(path) : resolve11(path)).toLowerCase();
+  return real(left) === real(right);
 }
 function branchExists(repository, branch) {
   return git(repository, ["show-ref", "--verify", "--quiet", `refs/heads/${branch}`]).code === 0;
@@ -2881,8 +2888,9 @@ async function main() {
     }
     const layout = option("--layout");
     if (layout !== null && layout !== "single" && layout !== "umbrella") return usage();
-    const marketplace = option("--marketplace") ?? defaultMarketplace();
-    if (!marketplace) throw new Error("Cannot find the agentflow marketplace directory; pass --marketplace <dir>");
+    const directory = option("--marketplace");
+    const marketplace = directory ? directoryMarketplace(directory) : defaultMarketplace();
+    if (!marketplace) throw new Error("Cannot find the agentflow marketplace; run /plugin marketplace add Hienne/agent-flow in Claude Code, or pass --marketplace <dir>");
     const plan = planInit(resolve15(positional(1)[0] ?? "."), { layout, marketplace, stacks: options("--stack").flatMap((value) => value.split(",")).map((value) => value.trim()).filter(Boolean) });
     if (!dryRun) writeInit(plan);
     output({ schemaVersion: 1, ...plan, dryRun }, (value) => [

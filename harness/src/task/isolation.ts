@@ -1,4 +1,4 @@
-import { existsSync, lstatSync, readdirSync, rmdirSync, symlinkSync, unlinkSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, realpathSync, rmdirSync, symlinkSync, unlinkSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { removePath } from '../shared/filesystem.js';
 import { ROOT, WORKTREES_DIRECTORY, isWithin, normalizePath } from '../shared/paths.js';
@@ -48,8 +48,10 @@ function gitOutput(cwd: string, args: string[], failure: string): string {
   return result.stdout.trim();
 }
 
+// Real paths: git prints the resolved top level, so a symlinked folder (macOS /var is /private/var) must match it.
 function samePath(left: string, right: string): boolean {
-  return resolve(left).toLowerCase() === resolve(right).toLowerCase();
+  const real = (path: string): string => (existsSync(path) ? realpathSync.native(path) : resolve(path)).toLowerCase();
+  return real(left) === real(right);
 }
 
 function branchExists(repository: string, branch: string): boolean {

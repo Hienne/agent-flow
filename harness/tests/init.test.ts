@@ -4,12 +4,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { parseConfig } from '../src/config/config.js';
-import { detectConfig, installShim, planInit, writeInit } from '../src/init/init.js';
+import { defaultMarketplace, detectConfig, directoryMarketplace, installShim, planInit, writeInit } from '../src/init/init.js';
 import { run } from '../src/shared/process.js';
 
 const REPOSITORY = join(import.meta.dirname, '..', '..');
 const UMBRELLA = join(import.meta.dirname, '..', 'evals', 'fixtures', 'nx-umbrella');
-const options = { layout: null, stacks: [], marketplace: REPOSITORY };
+const options = { layout: null, stacks: [], marketplace: directoryMarketplace(REPOSITORY) };
 
 function temporaryDirectory(): string {
   const directory = mkdtempSync(join(tmpdir(), 'flow-init-'));
@@ -72,6 +72,21 @@ test('init merges .claude/settings.json without dropping keys and writes nothing
   const again = planInit(root, options);
   assert.equal(again.config.exists, true);
   assert.deepEqual(again.settings.changes, []);
+});
+
+test('init writes the git source of a marketplace Claude Code registered from GitHub', () => {
+  const registry = join(temporaryDirectory(), 'known_marketplaces.json');
+  const github = { source: 'github', repo: 'owner/agent-flow' };
+  writeFileSync(registry, JSON.stringify({
+    other: { source: { source: 'github', repo: 'owner/other' }, installLocation: temporaryDirectory() },
+    agentflow: { source: github, installLocation: REPOSITORY },
+  }), 'utf8');
+  const cached = join(temporaryDirectory(), 'cache', 'agentflow', 'flow', '0.1.0');
+  const marketplace = defaultMarketplace(cached, registry);
+  assert.deepEqual(marketplace, { path: REPOSITORY, source: github });
+  const plan = planInit(nxWorkspace(temporaryDirectory()), { ...options, marketplace: marketplace! });
+  assert.equal(plan.settings.changes[0], `+ extraKnownMarketplaces.agentflow = ${JSON.stringify({ source: github })}`);
+  assert.equal(defaultMarketplace(cached, join(temporaryDirectory(), 'missing.json')), null);
 });
 
 test('init refuses a stack plugin the marketplace does not offer and a broken settings file', () => {
