@@ -16,13 +16,13 @@ Read the request (and, only if it names them, the files or tickets it points to;
 
 | Route | When | Stages |
 | --- | --- | --- |
-| **bug / perf** | Something that worked is broken, throws, fails a test, or got slow. | `/flow:diagnosing-bugs` → `/flow:tdd` (regression test at the seam) → `/flow:implement` with the fix as a direct request |
+| **bug / perf** | Something that worked is broken, throws, fails a test, or got slow. | `/flow:systematic-debugging` → `/flow:implement` with the fix as a direct request |
 | **small change** | A contained change whose contract and acceptance are already clear: a label, a field, a validation message, one config value, a narrow behaviour tweak in one place. | `/flow:implement` with the request |
 | **feature** | New behaviour or a change spanning several units, screens or contracts, or one whose rules are still open. | `/flow:grill-with-docs` → `/flow:to-spec` → `/flow:to-tickets` → `/flow:implement` per ticket |
 | **refactor** | Improve structure without changing behaviour: split or merge modules, deepen an interface, remove duplication. | `/flow:improve-codebase-architecture` |
 
 Tie-breakers:
-- A defect report is **bug / perf** even when the fix looks one line long; the diagnosis loop is what proves it.
+- A defect report is **bug / perf** even when the fix looks one line long; root-cause investigation is what proves it.
 - If a "small change" needs a decision nobody has made yet (which rule, which screen, which API), it is a **feature**.
 - If a refactor is requested to enable a feature, propose **feature** and mention the refactor as part of grilling.
 - When the request is too vague to classify, ask one question instead of guessing.

@@ -70,4 +70,4 @@ The parent agent applies valid findings from both reports, then reruns `verify -
 
 ## Specialist skills
 
-Specialist skills (`tdd`, `diagnosing-bugs`, a stack plugin's skills, browser tooling) refine execution when their trigger applies. They do not broaden an artifact's scope or acceptance criteria.
+Specialist skills (`tdd`, `systematic-debugging`, a stack plugin's skills, browser tooling) refine execution when their trigger applies. They do not broaden an artifact's scope or acceptance criteria.

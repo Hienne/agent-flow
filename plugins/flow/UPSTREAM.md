@@ -7,7 +7,6 @@ The workflow skills in `skills/` are forks. This table records where each came f
 | code-review | — | — | — | Written for flow: Standards and Spec lanes over the project conventions (the upstream `code-review` of github.com/mattpocock/skills is not used). |
 | code-simplification | — | — | — | Written for flow: behaviour-preserving simplification, report and apply modes. |
 | codebase-design | github.com/mattpocock/skills | skills/engineering/codebase-design | folder hash fb1d8ab98ad15155 | Unchanged apart from removed host-specific agent files. |
-| diagnosing-bugs | github.com/mattpocock/skills | skills/engineering/diagnosing-bugs | folder hash ed5cbc42b8ef8313 | Unchanged apart from removed host-specific agent files. |
 | domain-modeling | github.com/mattpocock/skills | skills/engineering/domain-modeling | folder hash f377a1341e1b3688 | Unchanged apart from removed host-specific agent files. |
 | grill-with-docs | github.com/mattpocock/skills | skills/engineering/grill-with-docs | folder hash a610223c9796f755 | Reads the flow workflow profile; domain docs via `flow explain`; records `decisions.md`. |
 | grilling | github.com/mattpocock/skills | skills/productivity/grilling | folder hash 4fa026e597977034 | Unchanged apart from removed host-specific agent files. |
@@ -17,6 +16,7 @@ The workflow skills in `skills/` are forks. This table records where each came f
 | overengineering-review | — | — | — | Local skill, no public upstream recorded. |
 | prototype | github.com/mattpocock/skills | skills/engineering/prototype | folder hash 62979fe039ef6440 | Unchanged apart from removed host-specific agent files. |
 | research | github.com/mattpocock/skills | skills/engineering/research | folder hash 2c8b768d5f0309ea | Unchanged apart from removed host-specific agent files. |
+| systematic-debugging | github.com/obra/superpowers (MIT, Jesse Vincent) | skills/systematic-debugging | — | Superpowers skill references point to `/flow:tdd`; test-pressure and creation-log files not copied. |
 | tdd | github.com/mattpocock/skills | skills/engineering/tdd | folder hash 0c09a435ba032b15 | Unchanged apart from removed host-specific agent files. |
 | to-spec | github.com/mattpocock/skills | skills/engineering/to-spec | folder hash 0ee8caf20fc7df94 | Writes `spec.md` per the flow artifact contract and an html-plan review page. |
 | to-tickets | github.com/mattpocock/skills | skills/engineering/to-tickets | folder hash f7d1bca83f85e488 | Writes tickets and `issues/index.md` per the flow artifact contract. |

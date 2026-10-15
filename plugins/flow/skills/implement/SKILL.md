@@ -13,7 +13,7 @@ Implement: $ARGUMENTS
 
 - **Validate the source.** Eligible: a `ready` ticket on the frontier, a `ready` spec small enough for one slice, `decisions.md` with `handoff: ready-for-implementation`, an architecture candidate with `readiness: ready-for-implementation`, or a direct request with clear contract, scope and observable acceptance criteria. Run `artifact check` and, for a ticket, `artifact frontier`; a ticket whose blockers are not `done` is not started.
 - **Start or resume the task.** `flow task start <feature> --target <path-or-project> --source <artifact>` exactly once per task, with `--isolate` only when the prompt asks for it; resume with `inspect --task <feature>`.
-- **Fence the behaviour.** Read what `flow explain <path>` lists (domain docs and conventions), ADRs, callers and existing patterns. The source's acceptance criteria, affected contracts and out-of-scope list bound the work; specialist skills (`tdd`, `diagnosing-bugs`, a stack plugin's skills, browser tooling) refine how you build, never what.
+- **Fence the behaviour.** Read what `flow explain <path>` lists (domain docs and conventions), ADRs, callers and existing patterns. The source's acceptance criteria, affected contracts and out-of-scope list bound the work; specialist skills (`tdd`, `systematic-debugging`, a stack plugin's skills, browser tooling) refine how you build, never what.
 
 ## Build
 
