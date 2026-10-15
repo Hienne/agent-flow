@@ -27,18 +27,8 @@ export type ReviewerState = {
   allowed: number
 }
 
-// One failing check: how many fixes were tried since it first failed, and the edit count at its last failure.
-export type FailingCheck = { fixes: number; editsAtFailure: number }
-
-export type AdvisorState = {
-  isEnabled: boolean
-  consults: number
-  edits: number
-  failing: Record<string, FailingCheck>
-}
-
 declare module 'claude-code' {
   interface PluginState {
-    'flow-ui': { taskView: TaskView | null; frontier: Frontier; reviewer: ReviewerState; advisor: AdvisorState }
+    'flow-ui': { taskView: TaskView | null; frontier: Frontier; reviewer: ReviewerState }
   }
 }
