@@ -4,6 +4,7 @@ The workflow skills in `skills/` are forks. This table records where each came f
 
 | Skill | Upstream | Path | Version | Local changes |
 |---|---|---|---|---|
+| blast-radius | github.com/cursor/plugins (MIT, Lauren Tan) | pstack/skills/blast-radius | commit e5136d82418d2db3165ea1050d17577cd618cc05 | Rewritten for flow: the consumer list comes from `flow impact`, proof scripts live under the artifacts directory, the report feeds Merge Danger; no multi-model arena. |
 | code-review | — | — | — | Written for flow: Standards and Spec lanes over the project conventions (the upstream `code-review` of github.com/mattpocock/skills is not used). |
 | code-simplification | — | — | — | Written for flow: behaviour-preserving simplification, report and apply modes. |
 | codebase-design | github.com/mattpocock/skills | skills/engineering/codebase-design | folder hash fb1d8ab98ad15155 | Unchanged apart from removed host-specific agent files. |
@@ -12,7 +13,7 @@ The workflow skills in `skills/` are forks. This table records where each came f
 | grilling | github.com/mattpocock/skills | skills/productivity/grilling | folder hash 4fa026e597977034 | Unchanged apart from removed host-specific agent files. |
 | html-plan | github.com/anthropics/claude-plugins-community (MIT, Thariq Shihipar) | html-plan/skills/html-plan | commit f60f0454df3045f724c43c6346ec80bdcc3472b2 | Unchanged except `/flow:html-plan` and the plugin-root pack path. |
 | implement | github.com/mattpocock/skills | skills/engineering/implement | folder hash 057512282695d357 | Runs the flow task lifecycle (`flow task start`, `flow verify`, review gate, `--full`, report). |
-| improve-codebase-architecture | github.com/mattpocock/skills | skills/engineering/improve-codebase-architecture | folder hash f74b0bf1be26220d | Skill references namespaced as `/flow:*`. |
+| improve-codebase-architecture | github.com/mattpocock/skills | skills/engineering/improve-codebase-architecture | folder hash f74b0bf1be26220d | Skill references namespaced as `/flow:*`; walks a single named module inline; the walk ends with non-obvious things and open questions (from pstack `how`). |
 | overengineering-review | — | — | — | Local skill, no public upstream recorded. |
 | prototype | github.com/mattpocock/skills | skills/engineering/prototype | folder hash 62979fe039ef6440 | Unchanged apart from removed host-specific agent files. |
 | research | github.com/mattpocock/skills | skills/engineering/research | folder hash 2c8b768d5f0309ea | Unchanged apart from removed host-specific agent files. |
@@ -20,5 +21,6 @@ The workflow skills in `skills/` are forks. This table records where each came f
 | tdd | github.com/mattpocock/skills | skills/engineering/tdd | folder hash 0c09a435ba032b15 | Unchanged apart from removed host-specific agent files. |
 | to-spec | github.com/mattpocock/skills | skills/engineering/to-spec | folder hash 0ee8caf20fc7df94 | Writes `spec.md` per the flow artifact contract and an html-plan review page. |
 | to-tickets | github.com/mattpocock/skills | skills/engineering/to-tickets | folder hash f7d1bca83f85e488 | Writes tickets and `issues/index.md` per the flow artifact contract. |
+| why | github.com/cursor/plugins (MIT, Lauren Tan) | pstack/skills/why | commit e5136d82418d2db3165ea1050d17577cd618cc05 | Rewritten for flow: one agent, sources limited to git, PRs, `decisions.md`, ADRs and named tickets; chat and telemetry only after asking; keeps the evidence tiers and the Preserve / Change / Avoid / Risk output. |
 | write-a-skill | — | — | — | Local copy, no public upstream recorded. |
 | writing-for-agents | github.com/mattpocock/skills | skills/productivity/writing-for-agents | folder hash 831e996c177c6c52 | Unchanged apart from removed host-specific agent files. |

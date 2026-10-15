@@ -1,0 +1,41 @@
+{
+  "skill_name": "why",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Why does PaymentClient retry exactly 3 times? I assume it's for performance. Context: `git log -S 'MAX_RETRIES = 3' -- src/payments/payment-client.ts` returns commit 4f2a91c, message: \"Retry 3 times with backoff: the payments API returns 429 under burst traffic (PAY-88)\". There is no PR for that commit and no decisions.md entry.",
+      "expected_output": "Answers from the commit message as a Direct claim citing 4f2a91c, does not confirm the performance guess, and lists the unsearched sources.",
+      "files": [],
+      "assertions": [
+        "The rate-limit reason is a Direct claim citing commit 4f2a91c.",
+        "The user's performance hypothesis is checked and not confirmed.",
+        "Ticket PAY-88 is listed as searched or as not searched with a reason.",
+        "The report has a Sources section with one line per source."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Why is the export row limit 250 in order-export.store.ts? The repository has a single squash commit \"Import project\" touching the whole tree, no pull requests, and no decisions.md or ADR mentions the limit. A Slack MCP and a Datadog MCP are connected in this session.",
+      "expected_output": "Reports the reason as Unknown, names the searches that came up empty, and asks before searching Slack or Datadog instead of searching them on its own.",
+      "files": [],
+      "assertions": [
+        "The reason for 250 is reported as Unknown, not stated with 'because'.",
+        "The report names the searches made in git history, decisions and ADRs.",
+        "Slack and Datadog are not searched without first asking the user.",
+        "No intent is read from the code itself, such as the constant's name or placement."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Before I remove the audit log write in TransferService, why is it there? Ticket SEC-12, named in the commit, says it is required for a customer's compliance review. The PR for that commit (#341) says \"cleanup: move audit write into the service\". decisions.md has no entry.",
+      "expected_output": "Reports both the compliance ticket and the cleanup PR with citations without picking one, and, because the question precedes a change, ends with Preserve / Change / Avoid / Risk constraints.",
+      "files": [],
+      "assertions": [
+        "Both SEC-12 and PR #341 are cited, and neither is silently dropped.",
+        "The two sources are presented as differing framings rather than one being chosen without evidence.",
+        "The report ends with Preserve, Change, Avoid and Risk constraints that cite the findings.",
+        "Removing the audit write is not recommended as safe on this evidence."
+      ]
+    }
+  ]
+}

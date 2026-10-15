@@ -43,6 +43,16 @@ A checklist for the Standards lane of `/flow:code-review` and for writing code. 
 - Database integration tests run against the real engine (Testcontainers) when the query relies on engine behaviour.
 - Test what the spec's acceptance criteria name; do not add tests for impossible inputs.
 
+## Where a search stops
+
+Extra places for `/flow:blast-radius` in a Spring project:
+
+- JSON shapes: a renamed field, a changed `@JsonProperty`, naming strategy or null inclusion changes what every client reads, and no Java caller shows it.
+- Database: entity mappings against the migration files, column renames, and native queries in strings or `@Query`.
+- Configuration: `@ConfigurationProperties` keys and their defaults across every `application-*.yml` profile.
+- Proxy semantics: a method that moves into the same class as its caller, or loses `public`, silently drops `@Transactional`, `@Async` and `@Cacheable`.
+- Messages and scheduled jobs: payload classes shared with other services, and cron expressions that now overlap.
+
 ## Verification
 
 `flow verify` runs the unit commands: Maven `mvn -q -pl <modules> -am verify` (`./mvnw` when the wrapper exists), Gradle `gradlew :<project>:check`. A change to the root `pom.xml`, `settings.gradle(.kts)`, root `build.gradle(.kts)`, `gradle.properties` or `gradle/libs.versions.toml` verifies the whole build.
