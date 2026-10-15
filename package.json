@@ -6,7 +6,7 @@
   "engines": { "node": ">=18.19" },
   "scripts": {
     "build": "node harness/build.mjs",
-    "test": "tsx --test harness/tests/*.test.ts",
+    "test": "tsx --test \"harness/tests/*.test.ts\"",
     "typecheck": "tsc -p harness"
   },
   "devDependencies": {
