@@ -1,0 +1,41 @@
+{
+  "skill_name": "overengineering-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Preflight a proposed TypeScript notification module before coding. Production needs one EmailNotifier. The proposal also exports Notifier, NOTIFIER_TOKEN, NotifierRegistry, createNotifierFactory, mergeNotifierOptions, and six optional lifecycle callbacks so tests can inject FakeNotifier. No second production notifier or configuration override is planned.",
+      "expected_output": "Requests revision of fake-only seams and unused configurable surface, describes the direct production-complete design, and records rejected extension points without turning the result into a post-implementation review.",
+      "files": [],
+      "assertions": [
+        "The decision is Revise.",
+        "A test fake is explicitly rejected as production variability evidence.",
+        "The registry, token/interface layer, or configurable factory is rejected as unsupported.",
+        "A concrete dumb version and abstraction ledger are included."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Preflight a payment service design with one production StripePaymentGateway behind a PaymentGateway port. The port isolates Stripe SDK types from the domain, owns idempotency and error translation, and is a committed package contract. Tests also use a fake. Decide whether to keep the port before implementation.",
+      "expected_output": "Keeps the single-implementation port because it contains an external protocol and committed contract; distinguishes the fake from the real justification and proposes no hypothetical gateways.",
+      "files": [],
+      "assertions": [
+        "The PaymentGateway port is retained.",
+        "The justification cites protocol containment or committed public contract, not the test fake.",
+        "No hypothetical extra gateway is proposed.",
+        "The abstraction ledger records the boundary exception."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Preflight a job runner used by three production commands. All three repeat the same cancellation, timeout, metrics, and cleanup lifecycle, but their job bodies and success outputs differ. The team proposes a runJob({ execute, onSuccess }) helper plus a plugin registry, strategy hierarchy, per-hook middleware, and twelve optional callbacks.",
+      "expected_output": "Keeps a small lifecycle helper supported by three consumers, rejects the speculative plugin machinery, and describes a direct vertical implementation.",
+      "files": [],
+      "assertions": [
+        "The shared lifecycle helper is retained with evidence from three production consumers.",
+        "The plugin registry, strategy hierarchy, middleware, or optional hook surface is rejected.",
+        "A concrete dumb version is described.",
+        "Rejected extension points are recorded."
+      ]
+    }
+  ]
+}

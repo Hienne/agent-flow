@@ -1,0 +1,1 @@
+{ "name": "shell", "root": "apps/shell", "projectType": "application", "targets": { "lint": {}, "test": {}, "build": {}, "serve": { "options": { "port": 4200 } } } }

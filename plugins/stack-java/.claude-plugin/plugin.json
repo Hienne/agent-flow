@@ -1,0 +1,8 @@
+{
+  "name": "stack-java",
+  "version": "0.1.0",
+  "description": "Java and Spring conventions for flow: review and test checklists for Maven and Gradle projects",
+  "author": { "name": "agentflow maintainers" },
+  "license": "UNLICENSED",
+  "dependencies": [{ "name": "flow", "version": ">=0.1.0" }]
+}

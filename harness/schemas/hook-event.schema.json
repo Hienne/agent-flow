@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.local/schemas/hook-event.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "type",
+    "host",
+    "cwd"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "type": {
+      "enum": [
+        "tool-call",
+        "tool-result",
+        "session-start",
+        "session-compact"
+      ]
+    },
+    "host": {
+      "enum": [
+        "claude",
+        "manual"
+      ]
+    },
+    "toolName": {
+      "type": "string"
+    },
+    "cwd": {
+      "type": "string"
+    },
+    "command": {
+      "type": "string"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "task": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "isError": {
+      "type": "boolean"
+    },
+    "failureClass": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sessionId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "$comment": "Host session identifier; binds harness tasks to the Claude Code session that drove them."
+    }
+  }
+}

@@ -1,0 +1,1 @@
+@echo gradle wrapper fixture

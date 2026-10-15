@@ -1,0 +1,9 @@
+{
+  "name": "flow",
+  "version": "0.1.0",
+  "description": "Core workflow: task harness, verify, review gate, workflow skills and agents",
+  "author": {
+    "name": "agentflow maintainers"
+  },
+  "license": "UNLICENSED"
+}

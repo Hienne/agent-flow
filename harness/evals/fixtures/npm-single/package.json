@@ -1,0 +1,9 @@
+{
+  "name": "npm-single",
+  "private": true,
+  "scripts": {
+    "lint": "node -e 0",
+    "test": "node -e 0",
+    "start": "node src/index.js"
+  }
+}

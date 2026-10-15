@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR order CSV export</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --border: #d1d9e0; --code-bg: #f6f8fa;
+  --add: #1a7f37; --add-bg: #dafbe1; --del: #cf222e; --del-bg: #ffebe9;
+  --ok: #1a7f37; --warn: #9a6700; --warn-bg: #fff8c5; --info-bg: #ddf4ff; --accent: #0969da;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #3d444d; --code-bg: #151b23;
+    --add: #3fb950; --add-bg: #12261e; --del: #f85149; --del-bg: #25171c;
+    --ok: #3fb950; --warn: #d29922; --warn-bg: #272115; --info-bg: #121d2f; --accent: #4493f8;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --border: #3d444d; --code-bg: #151b23;
+  --add: #3fb950; --add-bg: #12261e; --del: #f85149; --del-bg: #25171c;
+  --ok: #3fb950; --warn: #d29922; --warn-bg: #272115; --info-bg: #121d2f; --accent: #4493f8;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 980px; margin: 0 auto; padding: 24px 16px 80px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 21px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-top: 40px; }
+h3 { font-size: 17px; margin-top: 28px; }
+h4 { font-size: 15px; margin: 20px 0 6px; }
+p, li { max-width: 80ch; }
+.meta { color: var(--muted); font-size: 14px; }
+code { font: 13px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { font: 13px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+pre .a { color: var(--add); background: var(--add-bg); display: inline-block; width: 100%; }
+pre .d { color: var(--del); background: var(--del-bg); display: inline-block; width: 100%; }
+pre .c { color: var(--muted); }
+.cap { color: var(--muted); font-size: 13px; margin: -6px 0 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 10px 0 16px; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; vertical-align: top; }
+th { background: var(--code-bg); }
+.note { border-left: 4px solid var(--accent); background: var(--info-bg); padding: 8px 12px; border-radius: 4px; margin: 12px 0; }
+.note.warn { border-color: var(--warn); background: var(--warn-bg); }
+.review { border-left: 4px solid var(--warn); padding: 4px 12px; margin: 12px 0; }
+.review b { color: var(--warn); }
+.ok { color: var(--ok); font-weight: 600; }
+.bad { color: var(--warn); font-weight: 600; }
+nav ol { padding-left: 20px; }
+details > summary { cursor: pointer; font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>CSV export on the order list</h1>
+<p class="meta">
+  Feature <code>order-csv-export</code> · branch <code>agent/order-csv-export</code> (not committed) ·
+  2 units: <code>.worktrees/order-csv-export/web-app</code> and <code>.worktrees/order-csv-export/lib-common</code>
+</p>
+
+<table>
+  <tr><th>Ticket</th><th>Content</th><th>AC</th><th>Status</th></tr>
+  <tr><td>01</td><td>Export button and CSV builder for the visible columns</td><td>AC-001…005</td><td class="ok">done</td></tr>
+  <tr><td>02</td><td>Date-range limit and the "too many rows" warning</td><td>AC-006…009</td><td class="ok">done</td></tr>
+  <tr><td>lib</td><td><code>csvEscape</code> in lib-common: quotes and line breaks</td><td>AC-004</td><td class="bad">code + test done, library not released</td></tr>
+</table>
+
+<nav>
+  <strong>Contents</strong>
+  <ol>
+    <li><a href="#map">Change map</a></li>
+    <li><a href="#t01">Ticket 01 — export button and CSV builder</a></li>
+    <li><a href="#t02">Ticket 02 — date range and row limit</a></li>
+    <li><a href="#lib">Library — csvEscape</a></li>
+    <li><a href="#evidence">Evidence</a></li>
+    <li><a href="#danger">Merge Danger</a></li>
+    <li><a href="#open">Open items</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<h2 id="map">Summary</h2>
+
+<h3>Change map</h3>
+<p>The export takes two paths:</p>
+<ul>
+  <li><b>Building the file</b> (ticket 01) is a pure function, <code>buildOrderCsv(rows, columns)</code>, so every rule about columns, order and escaping is tested without a browser.</li>
+  <li><b>Deciding whether to export</b> (ticket 02) lives in the existing <code>OrderListStore</code>: it already owns the filter, so the range check and the row count reuse its state instead of reading the form again.</li>
+</ul>
+
+<pre><code>web-app/src/orders/
+├── export/
+│   ├── build-order-csv.ts          <span class="c"># + NEW: rows × visible columns → CSV text</span>
+│   └── build-order-csv.test.ts     <span class="c"># + NEW</span>
+├── order-list.store.ts             <span class="c"># ~ exportRequest(): range check + row count</span>
+├── order-list.store.test.ts        <span class="c"># ~ range and limit cases</span>
+└── order-list.view.html            <span class="c"># ~ Export button, disabled while loading</span>
+
+lib-common/src/csv/
+├── csv-escape.ts                   <span class="c"># ~ quote fields with quotes or line breaks</span>
+└── csv-escape.test.ts              <span class="c"># + NEW</span></code></pre>
+<p class="cap">web-app: 3 files changed + 2 new (+214 / −9, ~120 of them tests). lib-common: 1 file changed + 1 new test.</p>
+
+<!-- ============================================================ -->
+<h2 id="t01">Ticket 01 — export button and CSV builder</h2>
+
+<h3>1.1 Column order and header</h3>
+<p><code>export/build-order-csv.ts:12</code>, <code>buildOrderCsv(rows, columns)</code>. The file follows what the user sees, not the API shape:</p>
+<pre><code>buildOrderCsv(rows, columns)
+  visible = columns where !hidden, in the grid's current order
+  header  = visible.map(label)                 <span class="c">(the translated label, not the field key)</span>
+  for each row
+    cell = column.format ? column.format(row) : row[column.field]
+    line = visible.map(cell → csvEscape(cell)).join(',')
+  return [header, ...lines].join('\r\n')       <span class="c">(CRLF: spreadsheet apps expect it)</span></code></pre>
+<div class="review"><b>Needs review:</b> the builder uses each column's display <code>format</code>, so amounts come out as the user sees them (<code>1,250.00</code>) and the file is not machine-numeric. The spec asks for "what the screen shows" (AC-003); the raw-number alternative was rejected in DEC-002.</div>
+
+<h3>1.2 Runtime flow of the button</h3>
+<pre><code>(click) Export                                    <span class="c">order-list.view.html:41</span>
+  store.exportRequest()                           <span class="c">order-list.store.ts:88</span>
+    range or limit violation? → warning dialog, stop
+    api.fetchAll(filter)                          <span class="c">// existing endpoint, page size = limit</span>
+      buildOrderCsv(rows, grid.columns())
+        download('orders-YYYYMMDD.csv', text)</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="t02">Ticket 02 — date range and row limit</h2>
+
+<h3>2.1 Decision table</h3>
+<table>
+  <tr><th>Range</th><th>Rows</th><th>Result</th><th>Test</th></tr>
+  <tr><td>≤ 92 days</td><td>≤ 10,000</td><td>export</td><td>exports when range and count are inside the limits</td></tr>
+  <tr><td>&gt; 92 days</td><td>any</td><td>warning "range too long", no request</td><td>blocks a range longer than 92 days before any request</td></tr>
+  <tr><td>exactly 92 days</td><td>≤ 10,000</td><td>export (the bound is inclusive)</td><td>accepts a range of exactly 92 days</td></tr>
+  <tr><td>≤ 92 days</td><td>&gt; 10,000</td><td>warning "too many rows"</td><td>warns when the count exceeds the limit</td></tr>
+</table>
+
+<h3>2.2 Why the count comes from the store</h3>
+<pre><code> exportRequest() {
+<span class="d">-    const filter = this.form.getRawValue();</span>
+<span class="a">+    const filter = this.filter();          // the store already holds the applied filter</span>
+<span class="a">+    if (rangeDays(filter) &gt; MAX_RANGE_DAYS) return this.warn('range_too_long');</span>
+<span class="a">+    if (this.total() &gt; MAX_ROWS) return this.warn('too_many_rows');</span>
+     …</code></pre>
+<p>Reading the form exported the filter the user had typed but not applied yet, so the file could disagree with the list on screen.</p>
+
+<!-- ============================================================ -->
+<h2 id="lib">Library — csvEscape</h2>
+<h3>Why fields broke before</h3>
+<p>The old <code>csvEscape</code> quoted only fields with commas. A note containing a line break or a double quote split the row in two when opened in a spreadsheet.</p>
+<h3>Fix</h3>
+<pre><code><span class="d">-  return value.includes(',') ? `"${value}"` : value;</span>
+<span class="a">+  return /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;</span></code></pre>
+<p>web-app gets the fix once lib-common is released and its version bumped; until then the local link carries it.</p>
+
+<!-- ============================================================ -->
+<h2 id="evidence">Evidence</h2>
+
+<h3>Before / after per behaviour</h3>
+<table>
+  <tr><th>Situation</th><th>Before</th><th>After</th><th>Test</th></tr>
+  <tr><td>Grid with a hidden column</td><td>no export</td><td>file without that column</td><td>skips hidden columns and keeps the grid order</td></tr>
+  <tr><td>Note with a line break</td><td>row split in two</td><td>one quoted field</td><td>lib: quotes fields with line breaks</td></tr>
+  <tr><td>Range of 120 days</td><td>—</td><td>warning, no request</td><td>blocks a range longer than 92 days…</td></tr>
+  <tr><td>Typed but unapplied filter</td><td>—</td><td>file matches the list on screen</td><td>exports with the applied filter</td></tr>
+</table>
+
+<h3>Test runs (after every change)</h3>
+<pre><code>$ flow verify --task order-csv-export-02
+PASSED  web-app:lint
+PASSED  web-app:test
+PASSED  web-app:build
+REVIEW satisfied: code-review and code-simplification evidence recorded</code></pre>
+
+<h3>Harness gates</h3>
+<table>
+  <tr><th>Task</th><th>lint</th><th>test</th><th>build</th><th>review (code + simplify)</th></tr>
+  <tr><td>-01, -02</td><td class="ok">pass</td><td class="ok">pass</td><td class="ok">pass</td><td class="ok">ran, every valid finding applied</td></tr>
+  <tr><td>lib</td><td class="ok">pass</td><td class="ok">pass</td><td class="ok">pass</td><td>below threshold</td></tr>
+</table>
+<p>Findings applied after review:</p>
+<ul>
+  <li>Named the limits <code>MAX_RANGE_DAYS</code> and <code>MAX_ROWS</code>.</li>
+  <li>Removed a pass-through <code>exportService</code> that only forwarded to the store.</li>
+</ul>
+
+<div class="note warn"><b>Not checked on the running app:</b> the download itself and opening the file in a spreadsheet. All evidence above is unit tests.</div>
+
+<!-- ============================================================ -->
+<h2 id="danger">Merge Danger</h2>
+<p><b>Door:</b> two-way. Front-end only: no API, schema or data change. Reverting restores the old behaviour at once; the library change reverts on its own.</p>
+<p><b>Blast radius:</b> the order list, plus every consumer of <code>csvEscape</code>.</p>
+<ul>
+  <li><b>Shared library.</b> Other exports that call <code>csvEscape</code> start quoting fields with quotes and line breaks once the library is released. That is a fix, but their files change byte for byte.</li>
+  <li><b>New warning dialogs.</b> Users with wide filters meet a dialog they did not see before.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="open">Open items</h2>
+<ul>
+  <li><b>Advisor did not run.</b> The whole-feature step needs the <code>--advisor</code> flag; the finding count is 0 because nothing ran. Rerun with <code>/flow:implement … --full --advisor</code>.</li>
+  <li><b>No runtime UI check</b>; see Evidence.</li>
+  <li><b>Not committed.</b> Both <code>agent/order-csv-export</code> branches wait for the developer's review.</li>
+  <li>Unchanged: the order API, other screens' exports (until the library release).</li>
+</ul>
+
+<p class="meta">🤖 Generated with <a href="https://claude.com/claude-code">Claude Code</a></p>
+</main>
+</body>
+</html>

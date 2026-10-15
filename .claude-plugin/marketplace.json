@@ -1,0 +1,36 @@
+{
+  "name": "agentflow",
+  "owner": {
+    "name": "agentflow maintainers"
+  },
+  "metadata": {
+    "description": "Stateful Claude Code workflow: grill, spec, tickets, implement, verify and a hard review gate, for any stack",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "flow",
+      "source": "./plugins/flow",
+      "description": "Core workflow: task harness, verify, review gate, workflow skills and agents",
+      "version": "0.1.0"
+    },
+    {
+      "name": "flow-ui",
+      "source": "./plugins/flow-ui",
+      "description": "Interface mods for flow: task band, ticket frontier, advisor and reviewer gates",
+      "version": "0.1.0"
+    },
+    {
+      "name": "stack-java",
+      "source": "./plugins/stack-java",
+      "description": "Java and Spring conventions for flow (Maven, Gradle)",
+      "version": "0.1.0"
+    },
+    {
+      "name": "stack-hdt-angular",
+      "source": "./plugins/stack-hdt-angular",
+      "description": "Angular 16, Nx and Module Federation conventions for flow, with mf-smoke",
+      "version": "0.1.0"
+    }
+  ]
+}

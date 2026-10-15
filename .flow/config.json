@@ -1,0 +1,11 @@
+{
+  "$schema": "../harness/schemas/config.schema.json",
+  "layout": "single",
+  "units": { "adapters": ["npm"] },
+  "verify": {
+    "targets": ["typecheck", "test", "build"],
+    "custom": [
+      { "name": "flow-check", "files": ["**"], "command": ["node", "plugins/flow/dist/flow.mjs", "check", "."] }
+    ]
+  }
+}

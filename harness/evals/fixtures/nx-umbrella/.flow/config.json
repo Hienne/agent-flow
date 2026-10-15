@@ -1,0 +1,1 @@
+{ "layout": "umbrella", "units": { "adapters": ["nx"] }, "context": { "docs": ["{workspace}/CONTEXT.md"] } }

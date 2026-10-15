@@ -1,0 +1,437 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.local/schemas/task-manifest.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "manifestRevision",
+    "taskId",
+    "feature",
+    "state",
+    "phase",
+    "source",
+    "targets",
+    "baseline",
+    "plan",
+    "evidence",
+    "taskHandoff",
+    "startedAt",
+    "lastSeenAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "manifestRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "taskId": {
+      "type": "string",
+      "pattern": "^feature:[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "feature": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "state": {
+      "enum": [
+        "active",
+        "blocked",
+        "completed"
+      ]
+    },
+    "phase": {
+      "enum": [
+        "inspecting",
+        "implementing",
+        "verifying",
+        "reviewing",
+        "blocked",
+        "completed"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "path",
+        "revision"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "artifact",
+            "conversation",
+            "external"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      }
+    },
+    "targets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "path",
+          "workspace",
+          "project"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "workspace": {
+            "type": "string",
+            "minLength": 1
+          },
+          "project": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "isolation": {
+      "$comment": "Harness-managed git worktrees. Absent or null means the task edits the user checkout (--no-isolate or legacy manifests).",
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "required": [
+        "branch",
+        "root",
+        "repositories",
+        "removedAt"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string",
+          "pattern": "^agent/[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "root": {
+          "type": "string",
+          "pattern": "^\\.worktrees/[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "repositories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "workspace",
+              "baseHead",
+              "baseBranch"
+            ],
+            "properties": {
+              "workspace": {
+                "type": "string",
+                "minLength": 1
+              },
+              "baseHead": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "baseBranch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "removedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "startedAt",
+        "workspaceHeads",
+        "dirtyFiles"
+      ],
+      "properties": {
+        "startedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "workspaceHeads": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "dirtyFiles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fingerprint",
+              "status",
+              "recordedAt"
+            ],
+            "properties": {
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "status": {
+                "type": "string"
+              },
+              "recordedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "configFingerprint",
+        "verification"
+      ],
+      "properties": {
+        "configFingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "verification": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "verification",
+        "lastChangeSnapshotAt"
+      ],
+      "properties": {
+        "verification": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "step",
+              "verifiedAt",
+              "cached"
+            ],
+            "properties": {
+              "status": {
+                "type": "string"
+              },
+              "step": {
+                "type": "string"
+              },
+              "verifiedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "cached": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "reviews": {
+          "$comment": "Legacy schema-version-2 review evidence; accepted for persisted manifests but no longer emitted or consumed.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "capability",
+              "artifact",
+              "artifactHash",
+              "changeFingerprint",
+              "reviewedAt"
+            ],
+            "properties": {
+              "capability": {
+                "type": "string"
+              },
+              "artifact": {
+                "type": "string"
+              },
+              "artifactHash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "changeFingerprint": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "reviewedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "lastChangeSnapshotAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "formalReviews": {
+          "$comment": "Formal code-review/code-simplification evidence. A task whose change meets the review threshold completes only when both kinds (or a user waiver) are recorded and not stale.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "source",
+              "agentType",
+              "recordedAt",
+              "codeLines",
+              "codeFiles",
+              "files",
+              "blocking",
+              "nonBlocking",
+              "reason"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "code-review",
+                  "code-simplification",
+                  "waiver"
+                ]
+              },
+              "source": {
+                "enum": [
+                  "subagent",
+                  "manual",
+                  "user"
+                ]
+              },
+              "agentType": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "recordedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "codeLines": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "codeFiles": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "files": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "blocking": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "nonBlocking": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "reason": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "taskHandoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "reason",
+        "updatedAt"
+      ],
+      "properties": {
+        "state": {
+          "enum": [
+            "not-ready",
+            "ready-for-verification",
+            "blocked",
+            "completed"
+          ]
+        },
+        "reason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lastSeenAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

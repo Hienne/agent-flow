@@ -1,0 +1,137 @@
+{
+  "skill_name": "flow-workflow",
+  "evals": [
+    {
+      "id": 1,
+      "name": "quick-grill-handoff",
+      "prompt": "Grill the orders-list query endpoint change after resolving code facts.",
+      "expected_output": "At most three implementation-changing questions, decisions artifact, and explicit handoff state.",
+      "assertions": [
+        "No more than three questions are asked in the first round",
+        "The output names decisions.md",
+        "The output emits READY_FOR_SPEC, READY_FOR_IMPLEMENTATION, or BLOCKED_BY_DECISION",
+        "The output does not implement production code"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "print-v2-spec",
+      "prompt": "Synthesize the validated Init/Confirm/Recall Print V2 decisions into a spec.",
+      "expected_output": "Ready local spec with stable AC IDs and no interview or external write.",
+      "assertions": [
+        "The output uses a local .scratch spec path",
+        "The output contains stable AC identifiers",
+        "The output marks the spec ready",
+        "The output does not ask the user or publish to GitLab"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "print-v2-ticket-graph",
+      "prompt": "Create two parallel Print V2 tickets and one ticket blocked by both.",
+      "expected_output": "Local ticket graph with 01 and 02 on the frontier and 03 blocked.",
+      "assertions": [
+        "Tickets 01 and 02 are ready and on the frontier",
+        "Ticket 03 is blocked by both 01 and 02",
+        "Ticket criteria trace to source AC IDs",
+        "Default mode does not quiz the user or write GitLab"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "review-threshold",
+      "prompt": "Compare implementation policy for a 2-file/40-line change and a 7-file/140-line change.",
+      "expected_output": "Small change skips formal skills; large change runs each once after stabilization.",
+      "assertions": [
+        "The small change skips formal code review and simplification",
+        "The large change invokes both formal skills exactly once",
+        "Full verification runs once after stabilization",
+        "Specialist skills remain available and no commit occurs"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "speculative-candidate-gate",
+      "prompt": "Assess the nearly unreachable state-snapshot candidate.",
+      "expected_output": "Investigation-only or rejected candidate, never implementation-ready.",
+      "assertions": [
+        "The candidate is investigation-only or rejected",
+        "Evidence, counter-evidence, feasibility, and verification seam are present",
+        "The six-part scorecard is present",
+        "No production implementation or mandatory CDN HTML occurs"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "angular-design-language",
+      "prompt": "Assess an Angular route component, Component Store, service, and API endpoint refactor.",
+      "expected_output": "Architecture vocabulary plus concrete Angular identifiers and workspace ownership guidance.",
+      "assertions": [
+        "The output uses module, interface, and seam vocabulary",
+        "The output may name route component, Component Store, service, and API endpoint",
+        "A fake-only port is rejected",
+        "The six-part scorecard and workspace ownership guidance are present"
+      ]
+    },
+    {
+      "id": 7,
+      "name": "resume-from-versioned-handoff",
+      "prompt": "Resume a compacted feature session from decisions.md revision 3 and continue to specification without relying on prior chat.",
+      "expected_output": "The source chain and persisted handoff determine the next stage without re-asking settled decisions.",
+      "assertions": [
+        "The decisions artifact contains a persisted handoff",
+        "The downstream artifact records source_revision 3",
+        "Settled decisions are not asked again",
+        "A source revision mismatch blocks the handoff"
+      ]
+    },
+    {
+      "id": 8,
+      "name": "dirty-workspace-feature-isolation",
+      "prompt": "Inspect feature B in a workspace already dirty from feature A, change one additional file, then verify feature B.",
+      "expected_output": "Verification uses feature B's persisted targets and baseline instead of assigning all workspace changes to its worklog.",
+      "assertions": [
+        "The execution context has a stable feature task ID",
+        "Unchanged baseline files are excluded",
+        "A baseline file changed again is reported as ambiguous",
+        "Only feature B activity is completed"
+      ]
+    },
+    {
+      "id": 9,
+      "name": "stale-activity-expiry",
+      "prompt": "Inspect a new task after an unrelated activity in the same workspace has been idle for nine hours.",
+      "expected_output": "Elapsed time starts from the new task and the stale activity is removed.",
+      "assertions": [
+        "Activity is keyed by task identity",
+        "The nine-hour activity expires",
+        "No earliest-workspace fallback is used",
+        "Completion deletes only the active task"
+      ]
+    },
+    {
+      "id": 10,
+      "name": "validated-candidate-not-spec-ready",
+      "prompt": "Run to-spec with an architecture candidate whose status is validated and readiness is validated.",
+      "expected_output": "The candidate is not accepted as specification-ready without readiness ready-for-spec.",
+      "assertions": [
+        "Validated status alone does not authorize to-spec",
+        "The missing readiness transition is named",
+        "No ready specification is produced",
+        "No production implementation is offered"
+      ]
+    },
+    {
+      "id": 11,
+      "name": "invalid-artifact-frontier",
+      "prompt": "Resolve a ticket frontier when the ready source spec omits verification seams and a ticket references an unknown AC ID.",
+      "expected_output": "Artifact validation fails closed and the frontier is empty.",
+      "assertions": [
+        "The missing verification seam is an error",
+        "The unknown AC reference is an error",
+        "Frontier validation runs before ticket selection",
+        "The returned frontier is empty"
+      ]
+    }
+  ]
+}

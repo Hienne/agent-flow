@@ -1,0 +1,7 @@
+{
+  "layout": "single",
+  "units": { "adapters": ["npm"] },
+  "verify": {
+    "custom": [{ "name": "docs", "files": ["docs/**/*.md"], "command": ["node", "-e", "0"] }]
+  }
+}

@@ -1,0 +1,1 @@
+{ "name": "app-a", "root": "apps/app-a", "projectType": "application", "targets": { "lint": {}, "test": {}, "build": {}, "serve": { "options": { "port": 4201 } } } }

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.local/schemas/workflow-artifact.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["artifact", "status", "workspace", "project", "source", "revision"],
+  "properties": {
+    "artifact": { "enum": ["decisions", "spec", "architecture-candidate", "ticket-index", "ticket", "worklog"] },
+    "status": { "enum": ["draft", "validated", "ready", "blocked", "done"] },
+    "workspace": { "type": "string" },
+    "project": { "type": "string" },
+    "source": { "type": "string" },
+    "source_revision": { "type": "integer", "minimum": 1 },
+    "revision": { "type": "integer", "minimum": 1 },
+    "handoff": { "enum": ["ready-for-spec", "ready-for-implementation", "blocked-by-decision"] },
+    "readiness": { "enum": ["observed", "validated", "investigation-only", "ready-for-spec", "ready-for-implementation", "rejected"] }
+  }
+  ,"allOf": [
+    {
+      "if": {
+        "properties": {
+          "source": {
+            "pattern": "^(?!conversation$)(?![a-zA-Z][a-zA-Z0-9+.-]*://).+"
+          }
+        },
+        "required": ["source"]
+      },
+      "then": {
+        "required": ["source_revision"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "extraKnownMarketplaces": {
+    "agentflow": {
+      "source": {
+        "source": "directory",
+        "path": "D:\\agentflow"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "flow@agentflow": true,
+    "flow-ui@agentflow": true
+  }
+}

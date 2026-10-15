@@ -1,0 +1,1 @@
+{ "name": "ui-a", "root": "libs/ui-a", "projectType": "library", "targets": { "lint": {}, "test": {} } }

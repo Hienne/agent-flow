@@ -1,0 +1,1 @@
+{ "name": "remote-a", "private": true, "dependencies": { "@demo/common": "file:../lib-common/dist/libs/common" } }

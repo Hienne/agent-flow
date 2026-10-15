@@ -1,0 +1,4 @@
+#!/bin/sh
+# Resolves the plugin root from this script's own location, so it works from any cwd.
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+exec node "$here/../dist/mf-smoke.mjs" "$@"

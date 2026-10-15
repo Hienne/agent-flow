@@ -1,0 +1,8 @@
+{
+  "name": "stack-hdt-angular",
+  "version": "0.1.0",
+  "description": "Angular 16, Nx and Module Federation conventions for flow, with mf-smoke to prove a remote inside its shell",
+  "author": { "name": "agentflow maintainers" },
+  "license": "UNLICENSED",
+  "dependencies": [{ "name": "flow", "version": ">=0.1.0" }]
+}

@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agentflow.local/schemas/config.schema.json",
+  "title": "flow project configuration (.flow/config.json)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["layout", "units"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "layout": {
+      "enum": ["single", "umbrella"],
+      "description": "single: the project root is one unit workspace. umbrella: the root groups nested workspaces."
+    },
+    "artifactsDir": {
+      "type": "string",
+      "minLength": 1,
+      "default": ".scratch",
+      "description": "Feature artifacts live in <artifactsDir>/<feature>/; harness state in <artifactsDir>/.flow/."
+    },
+    "units": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapters"],
+      "properties": {
+        "adapters": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["nx", "maven", "gradle", "npm"] }
+        },
+        "packageManager": {
+          "type": "string",
+          "minLength": 1,
+          "description": "npm adapter: the package manager that runs scripts. Default: package.json packageManager, then the lockfile, then npm."
+        }
+      }
+    },
+    "verify": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "targets": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["lint", "test", "build"]
+        },
+        "custom": {
+          "type": "array",
+          "description": "Extra steps: the command runs at the workspace root when a changed file matches one of the globs (relative to the workspace root; *, ** and ? are supported).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "files", "command"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "files": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+              "command": { "type": "array", "minItems": 1, "items": { "type": "string" }, "description": "Executable and arguments, run without a shell" }
+            }
+          }
+        }
+      }
+    },
+    "codeFiles": {
+      "description": "File extensions counted as code for the review thresholds, such as \".java\". Replaces the unit adapter's extensions when set.",
+      "type": "array",
+      "items": { "type": "string", "pattern": "^\\.[a-z0-9]+$" }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "broad": {
+          "type": "array",
+          "prefixItems": [{ "type": "integer", "minimum": 0 }, { "type": "integer", "minimum": 0 }],
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[code lines, code files]: review is required above both"
+        },
+        "deep": { "type": "integer", "minimum": 0, "description": "Review is required above this many code lines" }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Configured command rules. The core rules (git push, verify lock, task scope, review record/waive) always apply.",
+      "properties": {
+        "blockedCommands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["pattern", "message"],
+            "properties": {
+              "pattern": { "type": "string", "description": "Regular expression tested against each command segment" },
+              "message": { "type": "string" }
+            }
+          }
+        },
+        "unitRootOnly": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Executables that may only run with a unit workspace root as cwd"
+        },
+        "readOnlyCli": {
+          "type": "object",
+          "description": "CLI name -> allowed subcommands; anything else is blocked",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["allow"],
+            "properties": {
+              "allow": { "type": "array", "items": { "type": "string" }, "description": "Subcommand prefixes, e.g. \"mr view\"" },
+              "valueOptions": { "type": "array", "items": { "type": "string" }, "description": "Global options that take a value, e.g. -R" }
+            }
+          }
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "docs": { "type": "array", "items": { "type": "string" }, "description": "Paths from the root; {workspace} is replaced" },
+        "conventions": { "type": "array", "items": { "type": "string" }, "description": "Paths from the root; {workspace} is replaced" }
+      }
+    },
+    "hooks": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "disabled": { "description": "Hook behaviours to turn off. \"session-context\" stops the SessionStart core rules.", "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
