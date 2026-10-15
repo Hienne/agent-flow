@@ -3,8 +3,8 @@ name: code-simplifier
 description: Independent, behavior-preserving simplification review of one flow task (YAGNI, public surface, Rule of Three, deletion test). Use when `flow verify --task <feature>` reports REVIEW REQUIRED, or when the user asks for a formal simplification pass on a flow task. Read-only; proposes exact edits for the parent to apply. Pass the task slug in the prompt.
 tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit, MultiEdit, NotebookEdit, Agent
-model: sonnet
-effort: high
+model: opus
+effort: medium
 skills:
   - flow:code-simplification
   - flow:principles

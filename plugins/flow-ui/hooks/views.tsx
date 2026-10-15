@@ -1,10 +1,10 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, FsEntry, ProcessRunInit, ProcessRunResult, Register } from 'claude-code'
+import type { Register } from 'claude-code'
 
-import type { BlockedFeature, Frontier, ReadyTicket, TaskTone, TaskView } from '../types'
-import { findProject, flowCli } from './project'
+import type { TaskTone, TaskView } from '../types'
+import { findProject } from './project'
 
-// The task band above the prompt and the /frontier pane.
+// The task band above the prompt.
 
 const view = atom({ plugin: 'flow-ui', key: 'taskView' } as const, null)
 
@@ -52,85 +52,10 @@ function describe(task: Manifest): TaskView {
   }
 }
 
-const PANE = 'flow-ui-frontier'
-const frontier = atom({ plugin: 'flow-ui', key: 'frontier' } as const, {
-  isLoading: false,
-  loadedAt: null,
-  tickets: [],
-  blocked: [],
-} as Frontier)
-
-// What a scan needs from the engine, bound to the `$` of the dispatch running it.
-type Io = {
-  root: () => Promise<string>
-  cli: () => Promise<string>
-  list: (path: string) => Promise<FsEntry[]>
-  exists: (path: string) => Promise<boolean>
-  read: (path: string) => Promise<string>
-  run: (argv: readonly string[], init: ProcessRunInit) => Promise<ProcessRunResult>
-}
-
-type FrontierReport = {
-  findings: { severity: string; message: string }[]
-  frontier: { id: string; file: string; title: string }[]
-}
-
-// flow owns readiness: one `flow artifact frontier` run per feature that has tickets, all at once.
-async function collect(io: Io): Promise<Pick<Frontier, 'tickets' | 'blocked'>> {
-  const project = await findProject(io, await io.root())
-  if (!project) return { tickets: [], blocked: [{ feature: '.flow', errors: 1, firstError: 'no .flow/config.json above the session root; run flow init' }] }
-  const artifacts = `${project.root}/${project.artifacts}`
-  const features: string[] = []
-  for (const entry of (await io.exists(artifacts)) ? await io.list(artifacts) : []) {
-    if (entry.kind === 'dir' && (await io.exists(`${artifacts}/${entry.name}/issues`))) features.push(entry.name)
-  }
-  const cli = await io.cli()
-  const reports = await Promise.all(features.sort().map(async feature => {
-    const ran = await io.run(['node', cli, 'artifact', 'frontier', `${project.artifacts}/${feature}`, '--json'], { cwd: project.root, timeoutMs: 60_000 })
-    try {
-      return { feature, report: JSON.parse(ran.stdout) as FrontierReport }
-    } catch {
-      return { feature, report: { findings: [{ severity: 'error', message: ran.stderr.trim() || `exit ${ran.exitCode}` }], frontier: [] } }
-    }
-  }))
-
-  const tickets: ReadyTicket[] = []
-  const blocked: BlockedFeature[] = []
-  for (const { feature, report } of reports) {
-    tickets.push(...report.frontier.map(({ id, file, title }) => ({ feature, id, title, command: `/flow:implement ${project.artifacts}/${feature}/${file}` })))
-    const errors = report.findings.filter(finding => finding.severity === 'error')
-    if (errors.length) blocked.push({ feature, errors: errors.length, firstError: errors[0]?.message ?? '' })
-  }
-
-  return { tickets, blocked }
-}
-
-async function reload(io: Io, setFrontier: (fn: (value: Frontier) => Frontier) => Promise<unknown>) {
-  await setFrontier(value => ({ ...value, isLoading: true }))
-  const found = await collect(io).catch((error: unknown) => ({
-    tickets: [],
-    blocked: [{ feature: 'frontier', errors: 1, firstError: error instanceof Error ? error.message : String(error) }],
-  }))
-  await setFrontier(() => ({ ...found, isLoading: false, loadedAt: new Date().toTimeString().slice(0, 5) }))
-}
-
-function io($: EngineInterface): Io {
-  return {
-    root: () => $.session.root(),
-    cli: () => flowCli({ exists: path => $.fs.exists(path), read: path => $.fs.read(path) }, $.plugin.root),
-    list: path => $.fs.list(path),
-    exists: path => $.fs.exists(path),
-    read: path => $.fs.read(path),
-    run: (argv, init) => $.process.run(argv, init),
-  }
-}
-
 export const registerViews: Register = on => {
   let refresh: () => Promise<void> = async () => {}
 
   on('session.start', async ($, e, next) => {
-    await $.command.register({ name: 'frontier', description: 'Show ready flow tickets with their /flow:implement command' })
-
     const project = await findProject({ exists: path => $.fs.exists(path), read: path => $.fs.read(path) }, await $.session.root()).catch(() => null)
     const sessionId = await $.session.id()
 
@@ -178,49 +103,6 @@ export const registerViews: Register = on => {
         <Text bold>{task.feature}</Text>
         <Text color={TONE_COLOR[task.tone]}> · {task.phase}</Text>
         <Text dimColor> · {details}</Text>
-      </Box>
-    )
-  })
-
-  on('command.run', { command: 'frontier' }, async $ => {
-    await $.ui.open({ id: PANE, title: 'flow frontier' })
-    // Awaited: `$` belongs to this dispatch, so the scan must finish inside it. The pane shows the progress.
-    await reload(io($), fn => update($, frontier, fn))
-    const value = await read($, frontier)
-
-    return { text: `flow frontier: ${value.tickets.length} ready tickets, ${value.blocked.length} locked features.` }
-  })
-
-  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Button, Text } = $.ui.resolve(e)
-    const value = await read($, frontier)
-    const refresh = () => reload(io($), fn => update($, frontier, fn))
-    const copy = async (ticket: ReadyTicket) => {
-      const copied = await $.ui.copy({ text: ticket.command, surface: e.surface })
-      $.ui.toast(copied.isCopied ? `Copied: ${ticket.command}` : `Could not copy: ${ticket.command}`)
-    }
-
-    return (
-      <Box flexDirection="column">
-        <Box key="header">
-          <Text dimColor>
-            {value.isLoading ? 'Scanning features…' : `${value.tickets.length} ready tickets${value.loadedAt ? ` · ${value.loadedAt}` : ''} `}
-          </Text>
-          <Button key="refresh" label="Refresh" dimColor onPress={refresh} />
-        </Box>
-        {!value.isLoading && value.tickets.length === 0 && <Text dimColor>No ticket is ready.</Text>}
-        {value.tickets.map(ticket => (
-          <Box key={`${ticket.feature}/${ticket.id}`}>
-            <Button key={`copy-${ticket.feature}-${ticket.id}`} label="Copy" variant="primary" onPress={() => copy(ticket)} />
-            <Text bold>{` ${ticket.feature}`}</Text>
-            <Text>{` #${ticket.id} ${ticket.title}`}</Text>
-          </Box>
-        ))}
-        {value.blocked.map(item => (
-          <Text key={`blocked-${item.feature}`} color="yellow" wrap="truncate-end">
-            {`⚠ ${item.feature}: ${item.errors} artifact errors, frontier locked (${item.firstError})`}
-          </Text>
-        ))}
       </Box>
     )
   })
