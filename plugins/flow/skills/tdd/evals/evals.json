@@ -1,0 +1,28 @@
+{
+  "skill_name": "tdd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Add tests for the free-shipping rule I just added to shipping.ts: orders of 50 or more ship free, others pay 5. shipping.test.ts already has 'charges 5 for a 20 order'. The code is written and npm test runs vitest.",
+      "expected_output": "Builds the test plan table, finds the existing test already covers the paid branch, writes one new test for the free branch at 50, and shows that test going red when the threshold line is broken.",
+      "files": [],
+      "assertions": [
+        "A test plan table lists each changed behaviour with the existing test that already proves it, or none.",
+        "No new test is written for the paid branch that 'charges 5 for a 20 order' already covers.",
+        "The new test's expected value is a literal (0 or free), not recomputed the way the code computes it.",
+        "The new test is seen red by breaking the threshold line, with the red output shown, and the line is restored."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I changed formatPrice to use Intl.NumberFormat and now 'formats 1234.5 as 1,234.50' fails with '1,234.5'. The spec did not change the format. Make the suite green.",
+      "expected_output": "Treats the red test as a bug report, finds that the formatter lost the two-decimal minimum, and fixes the code, leaving the test unchanged.",
+      "files": [],
+      "assertions": [
+        "The failing test is neither skipped, commented out, nor edited to expect '1,234.5'.",
+        "The root cause (the missing minimumFractionDigits) is named.",
+        "The fix is in formatPrice, and the test goes green unchanged."
+      ]
+    }
+  ]
+}

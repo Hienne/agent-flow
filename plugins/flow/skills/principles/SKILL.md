@@ -12,6 +12,7 @@ Each principle is one file, `principles/P-<slug>.md`: rule, why, a violation, ho
 | `P-dumb-version-first` | Start from the shortest production-complete flow; add a seam only for current evidence or a named boundary. |
 | `P-rule-of-three` | One case proves need, two show variation, three justify extraction; a test fake is not a consumer. |
 | `P-deletion-test` | Inline the abstraction mentally; keep it only if knowledge would spread into its callers. |
+| `P-test-earns-its-place` | A test stays only when it can go red for a breakage no other test catches. |
 | `P-trust-contracts` | Trust declared contracts; validate or test impossible inputs only when the spec or documented legacy data requires it. |
 | `P-explicit-over-hidden-state` | Keep a short explicit expression at each use rather than a helper that holds state between calls. |
 | `P-no-mirror-models` | No view model plus mapper that only renames the fields of an existing type. |

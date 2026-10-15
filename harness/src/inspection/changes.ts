@@ -118,6 +118,7 @@ export function collectWorkspaceChanges(workspace: Workspace, base = 'HEAD'): Ch
   const codeChanges = changes.filter((change) => change.isCode);
   return {
     workspace,
+    base,
     available: true,
     changes,
     added: changes.reduce((sum, change) => sum + change.added, 0),

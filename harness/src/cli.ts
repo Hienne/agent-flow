@@ -17,10 +17,11 @@ import { fileHash } from './shared/filesystem.js';
 import { ROOT, WORKTREES_DIRECTORY, normalizePath, slugify } from './shared/paths.js';
 import type { ChangeGroup, TaskHandoff, TaskManifest, VerificationStep } from './shared/types.js';
 import { activeIsolation, physicalWorkspaceRoot, removeIsolation, worktreePath } from './task/isolation.js';
-import { acquireTaskIsolation, beginVerification, findSharedIsolation, isolationGroup, loadTaskManifest, taskManifests, recordFormalReview, recordInspection, recordVerification, requireTaskManifest, setTaskHandoff, startTaskManifest, updateTaskManifest } from './task/manifest.js';
+import { acquireTaskIsolation, beginVerification, findSharedIsolation, isolationGroup, loadTaskManifest, taskManifests, recordFormalReview, recordInspection, recordTestIntegrityAllowance, recordVerification, requireTaskManifest, setTaskHandoff, startTaskManifest, updateTaskManifest } from './task/manifest.js';
 import { impactLines, impactOfChanges, impactOfInputs, planWarnings } from './inspection/impact.js';
 import { scopeChangesToTask } from './task/scope.js';
 import { FORMAL_REVIEW_KINDS, REVIEW_AGENTS, codeFileKeys, evaluateReviewGate, evaluateStop, markReviewerStarted, markReviewerStopped, parseReviewResult, readSession, reviewEvidence, reviewGateSummary } from './review/gate.js';
+import { collectTestIntegrity, pendingTestIntegrity, testIntegrityAllowance, testIntegrityReport, testIntegrityResult } from './review/test-integrity.js';
 import { workspaceAt } from './topology/workspaces.js';
 import { planVerification } from './verification/planner.js';
 import { executeVerificationPlan } from './verification/runner.js';
@@ -141,6 +142,7 @@ function usage(): void {
     '  flow review status --task <feature>',
     '  flow review record --task <feature> --kind <code-review|code-simplification> [--blocking <n>] [--non-blocking <n>]  # outside Claude Code',
     '  flow review waive --task <feature> --reason <text>  # user only',
+    '  flow review allow-tests --task <feature> --reason <text>  # user only: accept the current test-integrity findings',
     '  flow artifact <check|frontier> <feature-dir-or-file>',
     '  flow explain <path> [--task <feature>]',
     '  flow policy evaluate  # normalized event on stdin',
@@ -434,8 +436,9 @@ async function main(): Promise<void> {
     if (args.includes('--plan')) {
       const review = evaluateReviewGate(manifest, stats, codeFileKeys(groups));
       const impact = impactOfChanges(groups);
-      const result = { schemaVersion: 2, status: 'planned', stats, review, plan, scopeWarnings: scoped.warnings, impact };
-      output(result, (value) => [...value.scopeWarnings.map((warning) => `WARNING ${warning.workspace}/${warning.file}: ${warning.message}`), ...planWarnings(value.impact), ...value.plan.steps.map((step) => `${step.kind.padEnd(12)} ${step.id}`), reviewGateSummary(value.review, value.stats)].join('\n'));
+      const testIntegrity = pendingTestIntegrity(manifest, collectTestIntegrity(groups));
+      const result = { schemaVersion: 2, status: 'planned', stats, review, plan, scopeWarnings: scoped.warnings, impact, testIntegrity };
+      output(result, (value) => [...value.scopeWarnings.map((warning) => `WARNING ${warning.workspace}/${warning.file}: ${warning.message}`), ...planWarnings(value.impact), ...value.plan.steps.map((step) => `${step.kind.padEnd(12)} ${step.id}`), ...(value.testIntegrity.length ? [`WARNING ${testIntegrityReport(value.testIntegrity)}`] : []), reviewGateSummary(value.review, value.stats)].join('\n'));
       return;
     }
     const isolation = activeIsolation(manifest);
@@ -469,6 +472,7 @@ async function main(): Promise<void> {
     if (taskChangeFingerprint(afterGroups) !== beforeFingerprint) {
       throw new Error('Task-scoped changes changed during verification; results were not recorded. Re-run verify against the current snapshot.');
     }
+    results.push(testIntegrityResult(pendingTestIntegrity(active, collectTestIntegrity(groups))));
     const failed = results.filter((result) => result.status === 'failed');
     const review = evaluateReviewGate(active, stats, codeFileKeys(groups));
     const completed = recordVerification(feature, results, active.manifestRevision, review);
@@ -485,7 +489,7 @@ async function main(): Promise<void> {
   if (command === 'review') {
     const action = args[1];
     const feature = option('--task');
-    if (!feature || !['status', 'record', 'waive'].includes(action ?? '')) return usage();
+    if (!feature || !['status', 'record', 'waive', 'allow-tests'].includes(action ?? '')) return usage();
     const manifest = requireTaskManifest(feature);
     const scoped = currentTaskScope(manifest);
     const stats = reviewStats(scoped.groups);
@@ -495,6 +499,16 @@ async function main(): Promise<void> {
       if (!kind || !(FORMAL_REVIEW_KINDS as string[]).includes(kind)) throw new Error(`review record requires --kind ${FORMAL_REVIEW_KINDS.join('|')}`);
       const count = (name: string): number | null => option(name) === null ? null : Number(option(name));
       recordFormalReview(feature, reviewEvidence({ kind: kind as (typeof FORMAL_REVIEW_KINDS)[number], source: 'manual', stats, files, blocking: count('--blocking'), nonBlocking: count('--non-blocking') }));
+    }
+    if (action === 'allow-tests') {
+      const reason = option('--reason');
+      if (!reason) throw new Error('review allow-tests requires --reason');
+      const findings = pendingTestIntegrity(manifest, collectTestIntegrity(scoped.groups));
+      if (findings.length) recordTestIntegrityAllowance(feature, testIntegrityAllowance(findings, reason));
+      output({ schemaVersion: 1, status: 'allowed', findings }, (value) => value.findings.length
+        ? [`Accepted ${value.findings.length} test-integrity finding(s); a later weakening needs a new allowance.`, ...value.findings.map((finding) => `  ${finding.kind.padEnd(17)} ${finding.file}: ${finding.line}`)].join('\n')
+        : 'No pending test-integrity findings.');
+      return;
     }
     if (action === 'waive') {
       const reason = option('--reason');

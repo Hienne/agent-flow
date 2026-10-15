@@ -49,6 +49,8 @@ export interface ChangeGroup {
   codeFiles: number;
   error?: string;
   scopeToOwners?: boolean;
+  // The commit the changes are diffed against: the workspace HEAD at task start.
+  base?: string;
 }
 
 export interface ReviewStats {
@@ -96,6 +98,21 @@ export interface FormalReviewEvidence {
   blocking: number | null;
   nonBlocking: number | null;
   reason: string | null;
+}
+
+export type TestIntegrityKind = 'skipped' | 'commented-out' | 'test-removed' | 'assertion-changed';
+
+export interface TestIntegrityFinding {
+  file: string;
+  kind: TestIntegrityKind;
+  line: string;
+}
+
+// Only the user records one, with `flow review allow-tests`; it accepts exactly the findings it lists.
+export interface TestIntegrityAllowance {
+  recordedAt: string;
+  reason: string;
+  findings: string[];
 }
 
 export interface VerificationEvidence {
@@ -146,6 +163,7 @@ export interface TaskManifest {
     verification: VerificationEvidence[];
     lastChangeSnapshotAt: string | null;
     formalReviews?: FormalReviewEvidence[];
+    testIntegrity?: TestIntegrityAllowance[];
   };
   taskHandoff: {
     state: TaskHandoff;

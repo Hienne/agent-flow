@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", or wants integration tests.
+description: Test-driven development. Use when the user wants to build features or fix bugs test-first, mentions "red-green-refactor", asks for tests or coverage, or wants integration tests.
 ---
 
 # Test-Driven Development
@@ -24,6 +24,33 @@ A **seam** is the public boundary you test at: the interface where you observe b
 Ask: "What's the public interface, and which seams should we test?"
 
 When the shape of that interface is itself in question (how deep the module is, where the seam belongs, what the interface should expose), call the Skill tool with "codebase-design" for the vocabulary. It is the shared source of the module, interface, depth, seam, adapter, leverage and locality terms, and it is a reference to consult, not a session to run.
+
+## Test plan: earn every test before writing it
+
+A test earns its place by catching a breakage no existing test catches. Before the first cycle, fill this table for the change, one row per behaviour that changes:
+
+| Behaviour that changes | How it can break | Existing test that already proves it (`file › test name`, or `none`) | Lowest reliable layer | New test? |
+
+- **Existing coverage first.** Search the suite for the behaviour and run the candidates; a row whose existing test goes red when you break the behaviour is covered, and gets `no` in the last column.
+- **Lowest reliable layer**: the cheapest seam whose test still fails for the real breakage (a pure function before a module, a module before a running app). The layer is reliable when the breakage reaches it; a lower layer that the bug bypasses buys nothing.
+- One row, at most one new test. A behaviour needing a second test names the second breakage it catches.
+
+Done when every changed behaviour has a row, and every `yes` names the breakage its test catches. In a flow task, put the table in the task's `worklog.md`; otherwise show it to the user with the seams.
+
+## Kill check: every new test is seen red
+
+A test that has never failed proves nothing. Every new test is seen **red** against broken code once:
+
+- In the loop, red-first is the kill check.
+- For a test written after its code (a characterisation test, a test a reviewer asked for, coverage around existing behaviour): break the exact line the test guards (flip the condition, drop the branch, return the old value), run the test, record the red output, then restore the line and see it green again.
+
+A test that stays green against broken code is **tautological** or tests the wrong seam: rewrite it at the seam that sees the breakage, or delete it. Done when every new test has a recorded red run, kept in `worklog.md` in a flow task.
+
+## When an existing test goes red
+
+An existing test that goes red is evidence about the change, so treat it as a bug report: run the `systematic-debugging` skill and find which side is wrong. When the code is wrong, fix the code. When the test encodes behaviour the spec now changes, update its expected value to the spec's new value and cite the spec line.
+
+The harness holds the line here: `flow verify` fails its `test-integrity` step when the task's diff skips or focuses a test, comments one out, removes test cases, or changes or removes an existing assertion. Only the user can accept those, with `flow review allow-tests --task <feature> --reason <text>` in their own terminal; give them the root cause and the reason for each listed finding, then wait.
 
 ## Anti-patterns
 

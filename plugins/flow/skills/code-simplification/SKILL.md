@@ -59,6 +59,7 @@ Prefer changes that remove a mental branch:
 - Consolidate duplication only when the duplicated behavior and change cadence are the same.
 - Keep explicit intermediate values when a compact expression or chained pipeline is harder to scan.
 - Keep code near its narrowest owner; do not promote local logic to shared code without multiple real consumers.
+- Run the deletion test on every test the diff added (`P-test-earns-its-place`): remove a test when another test already goes red for the same breakage, or merge same-shape cases into one table-driven test; rewrite one that cannot go red at the seam that sees the breakage. The evidence is a run: break the guarded line and show which tests go red. In report mode, name the line to break and the test expected to go red; the parent runs that check before deleting. Pre-existing tests stay out of scope; the `test-audit` skill handles a suite.
 
 Reject a candidate when it merely reduces lines, introduces a second pattern for the same job, broadens scope, or relies on speculative reuse.
 

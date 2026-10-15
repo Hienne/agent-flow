@@ -126,6 +126,7 @@ const FORMAT_EXTENSIONS = /\.(?:ts|html|scss|css|json|jsonc|js|mjs|cjs)$/i;
 const EVENT_KEYS = new Set(['schemaVersion', 'type', 'host', 'toolName', 'cwd', 'command', 'targets', 'task', 'isError', 'failureClass', 'sessionId']);
 const REVIEW_RECORD = /\bflow(?:\.mjs|\.cmd)?\s+review\s+record\b/;
 const REVIEW_WAIVE = /\bflow(?:\.mjs|\.cmd)?\s+review\s+waive\b/;
+const ALLOW_TESTS = /\bflow(?:\.mjs|\.cmd)?\s+review\s+allow-tests\b/;
 const EVENT_TYPES: Record<PolicyEventType, true> = { 'tool-call': true, 'tool-result': true, 'session-start': true, 'session-compact': true };
 const EVENT_HOSTS: Record<PolicyEvent['host'], true> = { claude: true, manual: true };
 
@@ -202,6 +203,10 @@ export function evaluatePolicy(event: PolicyEvent): PolicyResult {
     if (event.host === 'claude' && REVIEW_WAIVE.test(event.command)) {
       decision = 'block';
       messages.push('Only the user can waive formal review. Ask them to run `flow review waive --task <feature> --reason <text>` in their own terminal.');
+    }
+    if (event.host === 'claude' && ALLOW_TESTS.test(event.command)) {
+      decision = 'block';
+      messages.push('Only the user can accept skipped, removed or weakened tests. Give them the root cause and the reason for each test-integrity finding, and ask them to run `flow review allow-tests --task <feature> --reason <text>` in their own terminal.');
     }
     const unitRootOnly = policy.unitRootOnly ?? [];
     if (unitCommandOutsideRoot(commandSegments, event.cwd, unitRootOnly)) {

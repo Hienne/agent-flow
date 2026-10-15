@@ -1,0 +1,40 @@
+{
+  "skill_name": "test-audit",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Audit the tests in src/cart. src/cart/total.ts exports calculateTotal(items) that sums item.price and applies a 10% discount when the sum is over 100. src/cart/total.test.ts has three tests: (a) 'sums prices' computes the expected value with items.reduce((s, i) => s + i.price, 0) and compares it to calculateTotal(items) for two items worth 10 and 5; (b) 'sums two items' expects calculateTotal([{price: 20}, {price: 30}]) to be 50; (c) 'applies the discount' expects calculateTotal([{price: 200}]) to be 180. npm test runs vitest and you can run it.",
+      "expected_output": "Flags test (a) as tautological and (b) as a duplicate of the summing branch, proves both with kill checks or mutation runs before any delete verdict, keeps (c), writes the report under the artifacts directory, and stops for approval without editing tests.",
+      "files": [],
+      "assertions": [
+        "A baseline run of the scope's tests is recorded with its test count and duration.",
+        "Test (a) is classified as tautological because its expected value restates the code's computation.",
+        "Every delete verdict carries a pasted run (kill check or mutation result) naming which tests went red.",
+        "Test (c) is kept as the only test that goes red when the discount branch breaks.",
+        "No test file is changed before the user approves the report."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Our suite is bloated, delete the useless tests in src/orders. You can read the code, but this environment cannot run node or the test runner.",
+      "expected_output": "Reads and classifies the suspects but issues no delete verdict, because no run evidence is possible; it says what blocked the measurement and deletes nothing.",
+      "files": [],
+      "assertions": [
+        "No test is deleted.",
+        "No suspect gets a delete verdict; verdicts stop at rewrite or keep, or are marked unmeasured.",
+        "The report says that running tests was blocked and lists what would prove each suspect."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Audit the tests of the payments package for weak tests. It is a TypeScript package with jest; no mutation testing tool is installed or configured.",
+      "expected_output": "Proposes a mutation tool such as Stryker without installing it, and measures the suspects with manual kill checks instead.",
+      "files": [],
+      "assertions": [
+        "No dependency is installed without the user's yes.",
+        "Suspects are measured with kill checks: a guarded line broken, the tests run, the red tests recorded, the line restored.",
+        "The working tree has no leftover change from the kill checks."
+      ]
+    }
+  ]
+}
