@@ -27,7 +27,7 @@ Run every `flow` command from the project root (the directory holding `.flow/con
 
 ## Review
 
-Run the skill's Standards lane, then its Spec lane, yourself and in this context; keep their notes separate. The gathering above replaces the skill's step 1.
+Run the skill's Standards lane, then its Spec lane, yourself and in this context; keep their notes separate. The gathering above replaces how the skill's step 1 pins the change; its Scope rules and its read-in-full rule still apply.
 
 ## Report
 
