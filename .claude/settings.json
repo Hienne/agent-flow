@@ -2,8 +2,8 @@
   "extraKnownMarketplaces": {
     "agentflow": {
       "source": {
-        "source": "directory",
-        "path": "D:\\agentflow"
+        "source": "github",
+        "repo": "Hienne/agent-flow"
       }
     }
   },

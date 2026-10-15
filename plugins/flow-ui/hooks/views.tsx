@@ -63,7 +63,7 @@ const frontier = atom({ plugin: 'flow-ui', key: 'frontier' } as const, {
 // What a scan needs from the engine, bound to the `$` of the dispatch running it.
 type Io = {
   root: () => Promise<string>
-  cli: string
+  cli: () => Promise<string>
   list: (path: string) => Promise<FsEntry[]>
   exists: (path: string) => Promise<boolean>
   read: (path: string) => Promise<string>
@@ -84,8 +84,9 @@ async function collect(io: Io): Promise<Pick<Frontier, 'tickets' | 'blocked'>> {
   for (const entry of (await io.exists(artifacts)) ? await io.list(artifacts) : []) {
     if (entry.kind === 'dir' && (await io.exists(`${artifacts}/${entry.name}/issues`))) features.push(entry.name)
   }
+  const cli = await io.cli()
   const reports = await Promise.all(features.sort().map(async feature => {
-    const ran = await io.run(['node', io.cli, 'artifact', 'frontier', `${project.artifacts}/${feature}`, '--json'], { cwd: project.root, timeoutMs: 60_000 })
+    const ran = await io.run(['node', cli, 'artifact', 'frontier', `${project.artifacts}/${feature}`, '--json'], { cwd: project.root, timeoutMs: 60_000 })
     try {
       return { feature, report: JSON.parse(ran.stdout) as FrontierReport }
     } catch {
@@ -116,7 +117,7 @@ async function reload(io: Io, setFrontier: (fn: (value: Frontier) => Frontier) =
 function io($: EngineInterface): Io {
   return {
     root: () => $.session.root(),
-    cli: flowCli($.plugin.root),
+    cli: () => flowCli({ exists: path => $.fs.exists(path), read: path => $.fs.read(path) }, $.plugin.root),
     list: path => $.fs.list(path),
     exists: path => $.fs.exists(path),
     read: path => $.fs.read(path),

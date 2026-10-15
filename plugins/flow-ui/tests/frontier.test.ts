@@ -1,4 +1,5 @@
 import { expect, test } from 'claude-code/testing'
+import { flowCli } from '../hooks/project'
 
 const ROOT = 'D:\\work\\app'
 
@@ -101,4 +102,18 @@ test('outside a flow project the pane says to run flow init', async ($: any, on:
 
   const ui = await paneOnceLoaded($, 'terminal')
   expect(await ui.find({ type: 'Text', text: /run flow init/ })).toBeDefined()
+})
+
+test('the flow CLI is the sibling plugin locally and the installed flow copy in the plugin cache', async () => {
+  const installs = JSON.stringify({ plugins: { 'flow@agentflow': [
+    { installPath: 'C:\\Users\\me\\.claude\\plugins\\cache\\agentflow\\flow\\0.1.0', lastUpdated: '2026-01-01' },
+    { installPath: 'C:\\Users\\me\\.claude\\plugins\\cache\\agentflow\\flow\\0.2.0', lastUpdated: '2026-02-01' },
+  ] } })
+  const reads: string[] = []
+  const files = (registry: string) => ({ exists: async () => false, read: async (path: string) => (reads.push(path), registry) })
+  expect(await flowCli(files(installs), 'D:\\agentflow\\plugins\\flow-ui')).toBe('D:/agentflow/plugins/flow-ui/../flow/dist/flow.mjs')
+  const cached = 'C:\\Users\\me\\.claude\\plugins\\cache\\agentflow\\flow-ui\\0.2.0'
+  expect(await flowCli(files(installs), cached)).toBe('C:/Users/me/.claude/plugins/cache/agentflow/flow/0.2.0/dist/flow.mjs')
+  expect(reads).toEqual(['C:/Users/me/.claude/plugins/installed_plugins.json'])
+  expect(await flowCli(files('{ broken'), cached)).toBe('C:/Users/me/.claude/plugins/cache/agentflow/flow-ui/0.2.0/../flow/dist/flow.mjs')
 })

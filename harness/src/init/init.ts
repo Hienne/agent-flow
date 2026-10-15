@@ -12,10 +12,17 @@ const SETTINGS_FILE = join('.claude', 'settings.json');
 // Hook events the flow plugin handles; a project hook on the same event may do the same job twice.
 const FLOW_HOOK_EVENTS = ['SessionStart', 'PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PreCompact', 'Stop', 'SubagentStart', 'SubagentStop'];
 
+// Where the marketplace manifest is read (`path`) and the source written to settings (`source`): a local
+// directory, or a git source such as `{ source: 'github', repo }` as Claude Code registered it.
+export interface Marketplace {
+  path: string;
+  source: Record<string, unknown>;
+}
+
 export interface InitOptions {
   layout: Layout | null;
   stacks: string[];
-  marketplace: string;
+  marketplace: Marketplace;
 }
 
 export interface InitPlan {
@@ -55,15 +62,22 @@ export function detectConfig(root: string, layout: Layout | null = null): FlowCo
   return { layout: 'umbrella', units: { adapters: nested } };
 }
 
-// The marketplace directory: the checkout the running plugin lives in (<checkout>/plugins/flow), else a local
-// directory marketplace registered in Claude Code that offers the flow plugin.
-export function defaultMarketplace(plugin = pluginRoot()): string | null {
+export const directoryMarketplace = (path: string): Marketplace => ({ path: resolve(path), source: { source: 'directory', path: resolve(path) } });
+
+const KNOWN_MARKETPLACES = join(homedir(), '.claude', 'plugins', 'known_marketplaces.json');
+const offersFlow = (path: string): boolean => readJson<{ plugins?: Array<{ name?: string }> }>(join(path, '.claude-plugin', 'marketplace.json'), {}).plugins?.some((plugin) => plugin.name === 'flow') ?? false;
+
+// The marketplace: the checkout the running plugin lives in (<checkout>/plugins/flow), else a marketplace registered
+// in Claude Code that offers the flow plugin, local directory or git (read from its installLocation clone).
+export function defaultMarketplace(plugin = pluginRoot(), registry = KNOWN_MARKETPLACES): Marketplace | null {
   const checkout = resolve(plugin, '..', '..');
-  if (existsSync(join(checkout, '.claude-plugin', 'marketplace.json'))) return checkout;
-  const known = readJson<Record<string, { source?: { source?: string; path?: string } }>>(join(homedir(), '.claude', 'plugins', 'known_marketplaces.json'), {});
-  const entry = Object.values(known).find((value) => value.source?.source === 'directory' && value.source.path
-    && readJson<{ plugins?: Array<{ name?: string }> }>(join(value.source.path, '.claude-plugin', 'marketplace.json'), {}).plugins?.some((plugin) => plugin.name === 'flow'));
-  return entry?.source?.path ?? null;
+  if (existsSync(join(checkout, '.claude-plugin', 'marketplace.json'))) return directoryMarketplace(checkout);
+  const known = readJson<Record<string, { source?: Record<string, unknown> & { source?: string; path?: string }; installLocation?: string }>>(registry, {});
+  for (const value of Object.values(known)) {
+    const path = value.source?.source === 'directory' ? value.source.path : value.installLocation;
+    if (value.source && path && offersFlow(path)) return { path, source: value.source };
+  }
+  return null;
 }
 
 function hookCommands(value: unknown): string[] {
@@ -77,7 +91,7 @@ export function writeInit(plan: InitPlan): void {
 }
 
 export function planInit(root: string, options: InitOptions): InitPlan {
-  const marketplacePath = resolve(options.marketplace);
+  const marketplacePath = options.marketplace.path;
   const manifestPath = join(marketplacePath, '.claude-plugin', 'marketplace.json');
   if (!existsSync(manifestPath)) throw new Error(`Not a marketplace directory: ${normalizePath(marketplacePath)} has no .claude-plugin/marketplace.json`);
   const marketplace = parseJsonObject(manifestPath, 'marketplace manifest') as { name?: string; plugins?: Array<{ name?: string; source?: string }> };
@@ -102,7 +116,7 @@ export function planInit(root: string, options: InitOptions): InitPlan {
     changes.push(`${key in current ? '~' : '+'} ${section}.${key} = ${JSON.stringify(value)}`);
     settings[section] = { ...current, [key]: value };
   };
-  set('extraKnownMarketplaces', marketplace.name, { source: { source: 'directory', path: marketplacePath } });
+  set('extraKnownMarketplaces', marketplace.name, { source: options.marketplace.source });
   for (const plugin of plugins) set('enabledPlugins', `${plugin}@${marketplace.name}`, true);
 
   const hooks = (settings.hooks ?? {}) as Record<string, unknown>;
