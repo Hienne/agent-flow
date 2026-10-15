@@ -17,7 +17,6 @@ This project uses the `flow` plugin. `.flow/config.json` marks the project root;
 
 ## Optional agents
 
-- `flow:solution-advisor`: spawn only when the user's prompt contains `--advisor`, at most twice per ticket, for a plan that adds a seam, store, shared module, or changes an exported contract; a check still failing after two fixes in different directions; or two viable designs that differ in contract or structure. Pass pointers (task slug or ticket path, the question, the options, failing output), not content. Record the answer as a `DEC-###`.
 - `flow:feature-reviewer`: spawn once, with the feature slug, only when the user's prompt contains `--reviewer` and every ticket of the feature is `done`. Report its findings to the user as decisions; do not apply them.
 - Any other multi-agent run needs the trade-offs explained and the user's explicit approval first.
 
@@ -29,7 +28,7 @@ This project uses the `flow` plugin. `.flow/config.json` marks the project root;
 
 ## Principles
 
-Do a simplicity pass on every changed path against these principles (`/flow:principles` has the rule, reason and example for each). Reviews, simplifications and advisor answers cite them by ID.
+Do a simplicity pass on every changed path against these principles (`/flow:principles` has the rule, reason and example for each). Reviews and simplifications cite them by ID.
 
 - `P-dumb-version-first`, `P-rule-of-three`, `P-deletion-test`: seams and abstractions need current evidence. Run `/flow:overengineering-review` before adding or widening a seam.
 - `P-trust-contracts`, `P-explicit-over-hidden-state`, `P-no-mirror-models`: less code, fewer guards.

@@ -1,6 +1,6 @@
 ---
 name: principles
-description: Index of the engineering principles flow reviewers, simplifiers and advisors cite by ID (P-<slug>). Load it to find the principle behind a finding, a design decision or a core rule; each principle's full text is one file under principles/.
+description: Index of the engineering principles flow reviewers and simplifiers cite by ID (P-<slug>). Load it to find the principle behind a finding, a design decision or a core rule; each principle's full text is one file under principles/.
 ---
 
 # Principles

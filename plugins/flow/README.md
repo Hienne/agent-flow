@@ -56,8 +56,7 @@ The defaults are the values shown for `review`, and the adapter's extensions for
 | `flow:code-reviewer` | opus | Formal review, Standards and Spec axes (`flow:code-review`). |
 | `flow:code-simplifier` | sonnet | Behaviour-preserving simplification, report mode (`flow:code-simplification`). |
 | `flow:feature-reviewer` | opus | Whole-feature review once every ticket is `done`. |
-| `flow:solution-advisor` | opus | One recommended solution for one blocked decision. |
 
 ### Models are fixed
 
-Claude Code does not substitute `${user_config.*}` in an agent's `model` frontmatter (checked in the plugin spike), so the plugin declares no `review_model`, `simplify_model` or `advisor_model` option: each agent runs on the model in the table. To run one on another model, edit its `model:` line in the installed copy of `agents/<name>.md`, and expect a plugin update to overwrite that edit.
+Claude Code does not substitute `${user_config.*}` in an agent's `model` frontmatter (checked in the plugin spike), so the plugin declares no `review_model` or `simplify_model` option: each agent runs on the model in the table. To run one on another model, edit its `model:` line in the installed copy of `agents/<name>.md`, and expect a plugin update to overwrite that edit.
