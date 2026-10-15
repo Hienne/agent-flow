@@ -27,7 +27,6 @@ function host(on: any) {
   on('fs.exists', ($: unknown, e: { path: string }) => ({ value: slashes(e.path) in FILES }))
   on('fs.read', ($: unknown, e: { path: string }) => ({ value: FILES[slashes(e.path)] }))
   on('clock.every', () => ({ value: undefined }))
-  on('command.register', () => ({ value: undefined }))
   on('session.start', ($: unknown, e: { cwd: string }) => ({ cwd: e.cwd }))
 }
 

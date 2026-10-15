@@ -17,7 +17,7 @@
     {
       "name": "flow-ui",
       "source": "./plugins/flow-ui",
-      "description": "Interface mods for flow: task band, ticket frontier, advisor and reviewer gates",
+      "description": "Interface mods for flow: task band, advisor and reviewer gates",
       "version": "0.1.0"
     },
     {

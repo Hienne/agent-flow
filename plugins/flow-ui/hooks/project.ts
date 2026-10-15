@@ -18,6 +18,3 @@ export async function findProject(files: Files, start: string): Promise<Project 
     directory = directory.slice(0, slash)
   }
 }
-
-// flow-ui is read from the local marketplace folder (DEC-002), where flow is its sibling plugin.
-export const flowCli = (pluginRoot: string) => `${forwardSlashes(pluginRoot)}/../flow/dist/flow.mjs`

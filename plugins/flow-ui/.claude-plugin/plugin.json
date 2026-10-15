@@ -1,7 +1,7 @@
 {
   "name": "flow-ui",
   "version": "0.1.0",
-  "description": "Interface mods for flow: task band, ticket frontier, advisor and reviewer gates",
+  "description": "Interface mods for flow: task band, advisor and reviewer gates",
   "author": { "name": "agentflow maintainers" },
   "license": "UNLICENSED",
   "types": "./types/index.d.ts",
