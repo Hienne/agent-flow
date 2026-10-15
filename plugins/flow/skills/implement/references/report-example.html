@@ -191,11 +191,23 @@ REVIEW satisfied: code-review and code-simplification evidence recorded</code></
 <!-- ============================================================ -->
 <h2 id="danger">Merge Danger</h2>
 <p><b>Door:</b> two-way. Front-end only: no API, schema or data change. Reverting restores the old behaviour at once; the library change reverts on its own.</p>
-<p><b>Blast radius:</b> the order list, plus every consumer of <code>csvEscape</code>.</p>
+<p><b>Consumers:</b> <code>flow impact</code> lists web-app and admin-app as consumers of lib-common.</p>
+<p><b>Safety fact:</b> the new <code>csvEscape</code> returns a field unchanged unless it contains a double quote, a comma or a line break. <span class="ok">ran</span></p>
+<pre><code>$ node .scratch/order-csv-export/blast-radius/csv-escape-check.mjs
+plain fields unchanged: 40/40
+fields with " , \r \n quoted and doubled: 12/12</code></pre>
+<p class="cap">The script imports <code>csvEscape</code> from the built lib-common and compares it with the old version on the fields of every export that calls it.</p>
+<h3>Risks</h3>
 <ul>
-  <li><b>Shared library.</b> Other exports that call <code>csvEscape</code> start quoting fields with quotes and line breaks once the library is released. That is a fix, but their files change byte for byte.</li>
-  <li><b>New warning dialogs.</b> Users with wide filters meet a dialog they did not see before.</li>
+  <li><b>Shared library.</b> admin-app's user export calls <code>csvEscape</code> (<code>admin-app/src/users/user-export.ts:22</code>); its notes with quotes or line breaks come out quoted once the library is released. That is a fix, but those files change byte for byte. Likely, low cost. <span class="ok">ran</span></li>
+  <li><b>New warning dialogs.</b> Users with wide filters meet a dialog they did not see before. Certain, low cost. <span class="ok">cited</span> <code>order-export.store.ts:58</code></li>
 </ul>
+<h3>Cleared</h3>
+<ul>
+  <li><b>Fields without special characters.</b> Unchanged byte for byte; covered by the safety fact. <span class="ok">ran</span></li>
+  <li><b>Import back into the app.</b> No code in either workspace parses these files; the search for <code>parseCsv</code> and <code>csv-parse</code> found nothing. <span class="ok">cited</span></li>
+</ul>
+<p><b>Before merge:</b> open one admin-app user export with a multi-line note in a spreadsheet after the library release; rerun <code>csv-escape-check.mjs</code> after any change to <code>csvEscape</code>.</p>
 
 <!-- ============================================================ -->
 <h2 id="open">Open items</h2>

@@ -1,0 +1,42 @@
+{
+  "skill_name": "blast-radius",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Blast radius of this change in an umbrella project: in the Spring workspace orders-api, OrderResponse renames the JSON field `createdAt` to `createdOn` (Jackson default naming, no @JsonProperty). `flow impact --task order-dates` prints only `orders-api/orders-service: no dependents`. The Angular workspace orders-web, which is a separate repository, calls GET /orders and reads `order.createdAt` in order-list.component.ts. You can read both workspaces and run their unit tests.",
+      "expected_output": "Looks past the empty impact list to the wire format, names the orders-web consumer as a confirmed risk, and does not call the change safe because flow impact found no dependents.",
+      "files": [],
+      "assertions": [
+        "The report treats the JSON field rename as a wire-format break that flow impact cannot see.",
+        "orders-web reading `order.createdAt` is listed as a confirmed risk with its file.",
+        "The change is not declared safe on the strength of the empty `flow impact` output.",
+        "Each risk or safety fact carries an evidence level from the skill's ladder.",
+        "A Before merge check is named, such as a test or a call that reads the field from the real response."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "What could this break? The diff changes `evictExpired()` in cache.ts so it also runs on every `get()`, not only on a timer. The author says it only removes entries whose TTL has passed. You can read the code, but this environment cannot run node or the test suite.",
+      "expected_output": "Names the safety fact (only expired entries are removed), takes it as far as reading and walking the code allow, and reports it as unproven because nothing could be run, with the script that would prove it.",
+      "files": [],
+      "assertions": [
+        "The safety fact is stated as a single fact about which entries eviction removes.",
+        "The safety fact is reported as unproven, not as proven or safe.",
+        "The report says that running code was blocked, and names the script or test that would prove the fact.",
+        "Risks the reviewer checked and found safe appear in a separate Cleared list."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Blast radius before merge: the remote workspace remote-a bumps @ngrx/store from 16.2.0 to 17.0.0 in its package.json. The shell workspace shell-app stays on 16.2.0 and provides the root store as a shared singleton. Unit tests in remote-a pass. The stack-hdt-angular plugin is enabled and mf-smoke is on PATH.",
+      "expected_output": "Flags the shared-singleton version mismatch between shell and remote as the main risk and proposes proving it in the running shell with mf-smoke rather than relying on the remote's unit tests.",
+      "files": [],
+      "assertions": [
+        "The version mismatch of a shared singleton between remote-a and shell-app is the main risk.",
+        "Passing unit tests in remote-a are not accepted as proof that the remote works inside the shell.",
+        "mf-smoke against the shell is named as the proof or the Before merge check.",
+        "The report gives an evidence level for the main risk."
+      ]
+    }
+  ]
+}

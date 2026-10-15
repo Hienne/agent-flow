@@ -16,6 +16,17 @@ Read the conventions the project lists (`context.conventions` in `.flow/config.j
 - Shared singletons (router, store, auth, i18n) come from the shell. A remote does not provide a second root instance.
 - Remote production builds keep component inline styles as plain CSS: nested selectors stay unflattened there, while the local dev server compiles them as SCSS. Write flat CSS in inline `styles`, or use a `.scss` file.
 
+## Where a search stops
+
+Extra places for `/flow:blast-radius` in a federated workspace:
+
+- The shell's `module-federation.manifest.json` and every `loadRemoteModule` call that names the changed remote or its exposed `./Routes`.
+- Shared singletons and their versions: a version change in one workspace is a runtime mismatch that unit tests in that workspace cannot show.
+- Remotes in other workspaces that import the changed library through its package name, including `file:` links that `flow impact` lists.
+- Inline component styles that compile differently in the remote's production build.
+
+The proof for a remote is `mf-smoke` against its shell (`reproduced`); the remote's own unit tests do not prove it renders inside the shell.
+
 ## Nx commands
 
 - Run `npm`, `npx` and `nx` with the workspace root (the folder holding `package.json` and `nx.json`) as the working directory, for example `cd <workspace> && npx nx test <project>`.
