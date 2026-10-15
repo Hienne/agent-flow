@@ -141,9 +141,17 @@ Task handoff values are separate from artifact handoffs: `not-ready`, `ready-for
 
 ### `worklog.md`
 
-Keep a compact recovery record: goal, workspace/project, source artifact, active ticket or slice, contracts and invariants, decisions made during implementation, changed files, verification ledger, and open issues. Update it at phase boundaries and before compaction, not after every tool call.
+A compact recovery record with two owners.
 
-`flow verify --task <feature-slug>` refreshes this worklog from the task manifest. The automatic block owns only changed-file, verification, review-threshold, review-gate, and review-evidence data; authored goals, contracts, and decisions are preserved.
+`flow verify --task <feature-slug>` creates the worklog and refreshes its automatic block from the task manifest. That block owns only changed-file, verification, review-threshold, review-gate, and review-evidence data, costs the agent nothing, and is the review scope for `flow:code-reviewer` and `flow:code-simplifier`; authored sections are preserved.
+
+The authored sections (goal, active ticket or slice, contracts and invariants, decisions, open issues) exist for recovery after compaction or in a new session, so write them only when that recovery is likely:
+
+- the task belongs to a multi-ticket run (`--full`) or will span more than one session;
+- a decision has no `decisions.md` to land in;
+- an issue stays open when the session ends.
+
+Otherwise leave the scaffold the harness writes. Point to the source artifact instead of copying its goal or contracts. When you write them, update at phase boundaries and before compaction, not after every tool call.
 
 ## Handoff rules
 
