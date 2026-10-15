@@ -51,6 +51,7 @@ The canonical workflow policy for projects that use the `flow` plugin. The workf
 - During implementation, run the narrowest feedback loop that exercises the active acceptance criterion. Once code is stable, run `flow verify --task <feature>`; rerun with `--force` only when a cached success was invalidated outside the changed source fingerprint.
 - UI changes require verification on the actual surface when runtime access is available.
 - Report unavailable targets as unavailable, never as passed.
+- `verify` always runs a `test-integrity` step over the task's test files. It fails when the diff skips or focuses a test (`.skip`, `.only`, `xit`, `@Disabled`, `@Ignore`), comments out a test or assertion, removes more test cases than it adds, or changes or removes an existing assertion. A red test is a bug report: debug it (`systematic-debugging`) and fix the side that is wrong. When the test change is right, give the user the root cause and the reason for each finding; only they accept it, with `flow review allow-tests --task <feature> --reason <text>` in their own terminal, and the allowance covers exactly the findings it listed. The policy hook blocks that command for the agent.
 
 ## Review policy
 

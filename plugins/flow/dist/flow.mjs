@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // harness/src/cli.ts
-import { readFileSync as readFileSync14 } from "node:fs";
+import { readFileSync as readFileSync15 } from "node:fs";
 import { relative as relative9, resolve as resolve15 } from "node:path";
 
 // harness/src/artifacts/artifacts.ts
@@ -756,6 +756,7 @@ function collectWorkspaceChanges(workspace, base = "HEAD") {
   const codeChanges = changes.filter((change) => change.isCode);
   return {
     workspace,
+    base,
     available: true,
     changes,
     added: changes.reduce((sum, change) => sum + change.added, 0),
@@ -1622,7 +1623,7 @@ ${block}
 }
 
 // harness/src/policy/evaluator.ts
-import { existsSync as existsSync19 } from "node:fs";
+import { existsSync as existsSync20 } from "node:fs";
 import { isAbsolute as isAbsolute2, join as join16, resolve as resolve13 } from "node:path";
 
 // harness/src/task/isolation.ts
@@ -1755,8 +1756,81 @@ function removeIsolation(isolation, force) {
 }
 
 // harness/src/task/manifest.ts
-import { closeSync as closeSync3, existsSync as existsSync17, openSync as openSync3, readFileSync as readFileSync12, readdirSync as readdirSync7, unlinkSync as unlinkSync3, writeFileSync as writeFileSync3 } from "node:fs";
+import { closeSync as closeSync3, existsSync as existsSync18, openSync as openSync3, readFileSync as readFileSync13, readdirSync as readdirSync7, unlinkSync as unlinkSync3, writeFileSync as writeFileSync3 } from "node:fs";
 import { join as join14, relative as relative8, resolve as resolve12 } from "node:path";
+
+// harness/src/review/test-integrity.ts
+import { existsSync as existsSync17, readFileSync as readFileSync12 } from "node:fs";
+var TEST_INTEGRITY_STEP = "test-integrity";
+var TEST_FILE = /(?:^|\/)(?:__tests__|tests?|specs?)\/|\.(?:test|spec)\.[cm]?[jt]sx?$|(?:Tests?|IT)\.(?:java|kt)$|(?:^|\/)test_[^/]*\.py$|_test\.(?:py|go)$/;
+var SKIP = /\b(?:describe|context|suite|it|test|specify)\s*\.\s*(?:skip|only|todo|fixme)\b|\b(?:xit|xtest|xdescribe|xcontext|fit|fdescribe)\s*\(|@(?:Disabled|Ignore)\b|@(?:pytest\.mark\.(?:skip|skipif|xfail)|unittest\.skip)\b|\bpytest\.skip\s*\(|\bt\.Skip(?:Now)?\s*\(/;
+var DECLARATION = /^\s*(?:(?:it|test|specify)\s*(?:\.\s*\w+\s*)*\(|@Test\b|def\s+test_|func\s+Test\w*\s*\()/;
+var ASSERTION = /\b(?:expect|assert\w*)\s*[.(]|\bassert\s|\.should\b/;
+var COMMENT = /^\s*(?:\/\/+|#|\/?\*+)\s*/;
+function isTestFile(path) {
+  return TEST_FILE.test(path);
+}
+var normalize = (line) => line.trim().replace(/\s+/g, " ");
+function scanTestDiff(file, added, removed) {
+  const findings = [];
+  const addedText = new Set(added.map(normalize));
+  for (const line of added) {
+    const comment = COMMENT.exec(line);
+    const body = comment ? line.slice(comment[0].length) : null;
+    if (body !== null && (DECLARATION.test(body) || ASSERTION.test(body))) findings.push({ file, kind: "commented-out", line: normalize(line) });
+    else if (SKIP.test(line)) findings.push({ file, kind: "skipped", line: normalize(line) });
+  }
+  const removedDeclarations = removed.filter((line) => DECLARATION.test(line));
+  if (removedDeclarations.length > added.filter((line) => DECLARATION.test(line)).length) {
+    for (const line of removedDeclarations) if (!addedText.has(normalize(line))) findings.push({ file, kind: "test-removed", line: normalize(line) });
+  }
+  for (const line of removed) {
+    if (!COMMENT.test(line) && ASSERTION.test(line) && !addedText.has(normalize(line))) findings.push({ file, kind: "assertion-changed", line: normalize(line) });
+  }
+  return findings;
+}
+function diffLines(group, change) {
+  if (change.untracked) return { added: existsSync17(change.absolutePath) ? readFileSync12(change.absolutePath, "utf8").split(/\r?\n/) : [], removed: [] };
+  const result = run("git", ["diff", "--unified=0", "--no-color", group.base ?? "HEAD", "--", change.path], { cwd: group.workspace.root });
+  const lines = result.code === 0 ? result.stdout.split(/\r?\n/) : [];
+  return {
+    added: lines.filter((line) => line.startsWith("+") && !line.startsWith("+++")).map((line) => line.slice(1)),
+    removed: lines.filter((line) => line.startsWith("-") && !line.startsWith("---")).map((line) => line.slice(1))
+  };
+}
+function collectTestIntegrity(groups) {
+  return groups.flatMap((group) => group.changes.filter((change) => isTestFile(change.path)).flatMap((change) => {
+    const { added, removed } = diffLines(group, change);
+    return scanTestDiff(`${group.workspace.relativeRoot}/${change.path}`, added, removed);
+  }));
+}
+var findingKey = (finding) => `${finding.file}|${finding.kind}|${finding.line}`;
+function pendingTestIntegrity(manifest, findings) {
+  const allowed = new Set((manifest.evidence.testIntegrity ?? []).flatMap((allowance) => allowance.findings));
+  return findings.filter((finding) => !allowed.has(findingKey(finding)));
+}
+function testIntegrityAllowance(findings, reason) {
+  return { recordedAt: (/* @__PURE__ */ new Date()).toISOString(), reason, findings: findings.map(findingKey) };
+}
+function testIntegrityResult(pending) {
+  return {
+    id: TEST_INTEGRITY_STEP,
+    status: pending.length ? "failed" : "passed",
+    cached: false,
+    cacheMissReason: "not-cacheable",
+    durationMs: 0,
+    ...pending.length ? { output: testIntegrityReport(pending) } : {}
+  };
+}
+function testIntegrityReport(pending) {
+  return [
+    `${pending.length} change(s) weaken the existing tests:`,
+    ...pending.map((finding) => `  ${finding.kind.padEnd(17)} ${finding.file}: ${finding.line}`),
+    "Fix the code instead, or restore the test. When the change is right (the spec changed the behaviour, the test is obsolete), tell the user the root cause and the reason for each line; only they can accept it, with `flow review allow-tests --task <feature> --reason <text>` in their own terminal."
+  ].join("\n");
+}
+
+// harness/src/task/manifest.ts
 var FEATURE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 var TASK_PHASES = /* @__PURE__ */ new Set(["inspecting", "implementing", "verifying", "reviewing", "blocked", "completed"]);
 var TASK_KEYS = /* @__PURE__ */ new Set(["schemaVersion", "manifestRevision", "taskId", "feature", "state", "phase", "source", "targets", "isolation", "baseline", "plan", "evidence", "taskHandoff", "startedAt", "lastSeenAt"]);
@@ -1769,8 +1843,8 @@ function sourceIdentity(source, explicitRevision) {
   if (explicit !== null && (!Number.isInteger(explicit) || explicit < 1)) throw new Error(`Source revision must be a positive integer: ${explicitRevision}`);
   if (type !== "artifact") return { type, path: source, revision: explicit };
   const path = resolve12(ROOT, source);
-  if (!existsSync17(path)) throw new Error(`Source artifact not found: ${source}`);
-  const match = readFileSync12(path, "utf8").match(/^---\r?\n[\s\S]*?^revision:\s*([1-9]\d*)\s*$[\s\S]*?^---\s*$/m);
+  if (!existsSync18(path)) throw new Error(`Source artifact not found: ${source}`);
+  const match = readFileSync13(path, "utf8").match(/^---\r?\n[\s\S]*?^revision:\s*([1-9]\d*)\s*$[\s\S]*?^---\s*$/m);
   if (!match?.[1]) throw new Error(`Source artifact revision not found: ${source}`);
   const actual = Number(match[1]);
   if (explicit !== null && explicit !== actual) throw new Error(`Source revision mismatch for ${source}: expected ${actual}, found ${explicit}`);
@@ -1813,7 +1887,7 @@ function acquireTaskLock(feature) {
   }
   return () => {
     const owner = readJson(path, {});
-    if (existsSync17(path) && Number(owner.pid) === process.pid) unlinkSync3(path);
+    if (existsSync18(path) && Number(owner.pid) === process.pid) unlinkSync3(path);
   };
 }
 function validateTaskManifest(value, path) {
@@ -1844,12 +1918,16 @@ function validateTaskManifest(value, path) {
   if (formalReviews !== void 0 && (!Array.isArray(formalReviews) || !formalReviews.every((item) => item && ["code-review", "code-simplification", "waiver"].includes(item.kind) && ["subagent", "manual", "user"].includes(item.source) && typeof item.recordedAt === "string" && Number.isInteger(item.codeLines) && Number.isInteger(item.codeFiles) && Array.isArray(item.files)))) {
     throw new Error(`Invalid task manifest ${path}: invalid formal review evidence`);
   }
+  const testIntegrity = manifest.evidence.testIntegrity;
+  if (testIntegrity !== void 0 && (!Array.isArray(testIntegrity) || !testIntegrity.every((item) => item && typeof item.recordedAt === "string" && typeof item.reason === "string" && Array.isArray(item.findings)))) {
+    throw new Error(`Invalid task manifest ${path}: invalid test-integrity allowances`);
+  }
   delete manifest.evidence.reviews;
   return manifest;
 }
 function readTaskManifest(path) {
   try {
-    return validateTaskManifest(JSON.parse(readFileSync12(path, "utf8")), path);
+    return validateTaskManifest(JSON.parse(readFileSync13(path, "utf8")), path);
   } catch (error) {
     if (error instanceof SyntaxError) throw new Error(`Invalid task manifest ${path}: ${error.message}`);
     throw error;
@@ -1858,7 +1936,7 @@ function readTaskManifest(path) {
 function loadTaskManifest(feature) {
   if (!feature) return null;
   const path = taskManifestPath(feature);
-  return existsSync17(path) ? readTaskManifest(path) : null;
+  return existsSync18(path) ? readTaskManifest(path) : null;
 }
 function requireTaskManifest(feature) {
   const manifest = loadTaskManifest(feature);
@@ -1867,8 +1945,8 @@ function requireTaskManifest(feature) {
 }
 function taskManifests() {
   const scratch = ARTIFACTS_ROOT;
-  if (!existsSync17(scratch)) return [];
-  return readdirSync7(scratch, { withFileTypes: true }).filter((entry) => entry.isDirectory() && !entry.name.startsWith(".") && existsSync17(join14(scratch, entry.name, "task.json"))).map((entry) => readTaskManifest(join14(scratch, entry.name, "task.json"))).sort((left, right) => right.startedAt.localeCompare(left.startedAt));
+  if (!existsSync18(scratch)) return [];
+  return readdirSync7(scratch, { withFileTypes: true }).filter((entry) => entry.isDirectory() && !entry.name.startsWith(".") && existsSync18(join14(scratch, entry.name, "task.json"))).map((entry) => readTaskManifest(join14(scratch, entry.name, "task.json"))).sort((left, right) => right.startedAt.localeCompare(left.startedAt));
 }
 function activeTaskManifests() {
   return taskManifests().filter((manifest) => manifest.state === "active");
@@ -2040,6 +2118,13 @@ function recordFormalReview(feature, evidence) {
     return manifest;
   });
 }
+function recordTestIntegrityAllowance(feature, allowance) {
+  return updateTaskManifest(feature, (manifest) => {
+    if (manifest.state === "completed") throw new Error(`Task ${manifest.taskId} is completed; test-integrity allowances can no longer change it`);
+    manifest.evidence.testIntegrity = [...manifest.evidence.testIntegrity ?? [], allowance];
+    return manifest;
+  });
+}
 function recordVerification(feature, results, expectedRevision, reviewGate) {
   return updateTaskManifest(feature, (manifest) => {
     if (expectedRevision !== void 0 && manifest.manifestRevision !== expectedRevision) {
@@ -2047,7 +2132,7 @@ function recordVerification(feature, results, expectedRevision, reviewGate) {
     }
     if (!results.length) throw new Error("Cannot record verification without at least one verification or no-applicable-steps result");
     const expected = manifest.plan.verification.map((step) => step.id).sort();
-    const actual = results.map((result) => result.id).sort();
+    const actual = results.filter((result) => result.id !== TEST_INTEGRITY_STEP).map((result) => result.id).sort();
     const complete = expected.length ? expected.length === actual.length && expected.every((id, index) => id === actual[index]) : actual.length === 1 && actual[0] === "task-scope:no-applicable-steps";
     const now = (/* @__PURE__ */ new Date()).toISOString();
     manifest.evidence.verification = results.map((result) => ({ status: result.status, step: result.id, verifiedAt: now, cached: result.cached }));
@@ -2064,7 +2149,7 @@ function recordVerification(feature, results, expectedRevision, reviewGate) {
 }
 
 // harness/src/review/gate.ts
-import { existsSync as existsSync18 } from "node:fs";
+import { existsSync as existsSync19 } from "node:fs";
 import { join as join15 } from "node:path";
 var FORMAL_REVIEW_KINDS = ["code-review", "code-simplification"];
 var REVIEW_AGENTS = {
@@ -2133,7 +2218,7 @@ function sessionPath(sessionId) {
 function readSession(sessionId) {
   const path = sessionPath(sessionId);
   const empty = { features: [], stopBlocks: {}, running: [], updatedAt: (/* @__PURE__ */ new Date(0)).toISOString() };
-  return path && existsSync18(path) ? { ...empty, ...readJson(path, {}) } : empty;
+  return path && existsSync19(path) ? { ...empty, ...readJson(path, {}) } : empty;
 }
 function writeSession(sessionId, state) {
   const path = sessionPath(sessionId);
@@ -2315,6 +2400,7 @@ var FORMAT_EXTENSIONS = /\.(?:ts|html|scss|css|json|jsonc|js|mjs|cjs)$/i;
 var EVENT_KEYS = /* @__PURE__ */ new Set(["schemaVersion", "type", "host", "toolName", "cwd", "command", "targets", "task", "isError", "failureClass", "sessionId"]);
 var REVIEW_RECORD = /\bflow(?:\.mjs|\.cmd)?\s+review\s+record\b/;
 var REVIEW_WAIVE = /\bflow(?:\.mjs|\.cmd)?\s+review\s+waive\b/;
+var ALLOW_TESTS = /\bflow(?:\.mjs|\.cmd)?\s+review\s+allow-tests\b/;
 var EVENT_TYPES = { "tool-call": true, "tool-result": true, "session-start": true, "session-compact": true };
 var EVENT_HOSTS = { claude: true, manual: true };
 function validatePolicyEvent(value) {
@@ -2385,6 +2471,10 @@ function evaluatePolicy(event) {
       decision = "block";
       messages.push("Only the user can waive formal review. Ask them to run `flow review waive --task <feature> --reason <text>` in their own terminal.");
     }
+    if (event.host === "claude" && ALLOW_TESTS.test(event.command)) {
+      decision = "block";
+      messages.push("Only the user can accept skipped, removed or weakened tests. Give them the root cause and the reason for each test-integrity finding, and ask them to run `flow review allow-tests --task <feature> --reason <text>` in their own terminal.");
+    }
     const unitRootOnly = policy.unitRootOnly ?? [];
     if (unitCommandOutsideRoot(commandSegments, event.cwd, unitRootOnly)) {
       decision = "block";
@@ -2430,11 +2520,11 @@ function handlePolicyEvent(event) {
       for (const rawTarget of event.targets ?? []) {
         if (!FORMAT_EXTENSIONS.test(rawTarget)) continue;
         const target = absoluteTarget(rawTarget, event.cwd);
-        if (!target || !existsSync19(target)) continue;
+        if (!target || !existsSync20(target)) continue;
         const workspace = findWorkspace(target);
         if (!workspace) continue;
         const prettier = join16(workspace.root, "node_modules", "prettier", "bin-prettier.js");
-        if (existsSync19(prettier)) run("node", [prettier, "--write", "--ignore-unknown", target], { cwd: workspace.root });
+        if (existsSync20(prettier)) run("node", [prettier, "--write", "--ignore-unknown", target], { cwd: workspace.root });
       }
     }
     if (effect === "record-failure") {
@@ -2497,13 +2587,13 @@ function claudePolicyHook(payload) {
 }
 
 // harness/src/review/claude-hook.ts
-import { readFileSync as readFileSync13 } from "node:fs";
+import { readFileSync as readFileSync14 } from "node:fs";
 import { join as join17 } from "node:path";
 var REVIEW_HOOK_EVENTS = { Stop: "stop", SubagentStart: "subagent-start", SubagentStop: "subagent-stop" };
 function handbackMessage(payload) {
   const path = typeof payload.agent_transcript_path === "string" ? payload.agent_transcript_path : typeof payload.transcript_path === "string" && typeof payload.agent_id === "string" ? join17(payload.transcript_path.replace(/\.jsonl$/, ""), "subagents", `agent-${payload.agent_id}.jsonl`) : null;
   if (!path) return "";
-  for (const line of readFileSync13(path, "utf8").trim().split(/\r?\n/).reverse()) {
+  for (const line of readFileSync14(path, "utf8").trim().split(/\r?\n/).reverse()) {
     const entry = JSON.parse(line);
     if (entry.type !== "assistant" || !Array.isArray(entry.message?.content)) continue;
     const handback = entry.message?.content?.find((part) => part.type === "tool_use" && part.name === "SubagentHandback");
@@ -2535,7 +2625,7 @@ function claudeReviewOutput(result) {
 }
 
 // harness/src/inspection/impact.ts
-import { existsSync as existsSync20 } from "node:fs";
+import { existsSync as existsSync21 } from "node:fs";
 function label({ workspace, unit: unit3 }) {
   return workspace === "." ? unit3 : `${workspace}/${unit3}`;
 }
@@ -2553,7 +2643,7 @@ function impactOfInputs(inputs) {
   const impacts = /* @__PURE__ */ new Map();
   for (const input of inputs) {
     const path = resolveInput(input);
-    const workspace = existsSync20(path) ? findWorkspace(path) : null;
+    const workspace = existsSync21(path) ? findWorkspace(path) : null;
     const owned = workspace ? { workspace, project: resolveProject(path, loadProjects3(workspace)) } : findProject(input);
     if (!owned?.project) throw new Error(`No unit owns ${input}`);
     const impact = impactOf(owned.workspace, owned.project);
@@ -2769,6 +2859,7 @@ function usage() {
     "  flow review status --task <feature>",
     "  flow review record --task <feature> --kind <code-review|code-simplification> [--blocking <n>] [--non-blocking <n>]  # outside Claude Code",
     "  flow review waive --task <feature> --reason <text>  # user only",
+    "  flow review allow-tests --task <feature> --reason <text>  # user only: accept the current test-integrity findings",
     "  flow artifact <check|frontier> <feature-dir-or-file>",
     "  flow explain <path> [--task <feature>]",
     "  flow policy evaluate  # normalized event on stdin",
@@ -2855,7 +2946,7 @@ async function main() {
     if (!initialised) return;
     let payload;
     try {
-      payload = JSON.parse(readFileSync14(0, "utf8"));
+      payload = JSON.parse(readFileSync15(0, "utf8"));
     } catch {
       payload = {};
     }
@@ -3025,8 +3116,9 @@ async function main() {
     if (args.includes("--plan")) {
       const review2 = evaluateReviewGate(manifest, stats, codeFileKeys(groups));
       const impact = impactOfChanges(groups);
-      const result2 = { schemaVersion: 2, status: "planned", stats, review: review2, plan, scopeWarnings: scoped.warnings, impact };
-      output(result2, (value) => [...value.scopeWarnings.map((warning) => `WARNING ${warning.workspace}/${warning.file}: ${warning.message}`), ...planWarnings(value.impact), ...value.plan.steps.map((step) => `${step.kind.padEnd(12)} ${step.id}`), reviewGateSummary(value.review, value.stats)].join("\n"));
+      const testIntegrity = pendingTestIntegrity(manifest, collectTestIntegrity(groups));
+      const result2 = { schemaVersion: 2, status: "planned", stats, review: review2, plan, scopeWarnings: scoped.warnings, impact, testIntegrity };
+      output(result2, (value) => [...value.scopeWarnings.map((warning) => `WARNING ${warning.workspace}/${warning.file}: ${warning.message}`), ...planWarnings(value.impact), ...value.plan.steps.map((step) => `${step.kind.padEnd(12)} ${step.id}`), ...value.testIntegrity.length ? [`WARNING ${testIntegrityReport(value.testIntegrity)}`] : [], reviewGateSummary(value.review, value.stats)].join("\n"));
       return;
     }
     const isolation = activeIsolation(manifest);
@@ -3058,6 +3150,7 @@ async function main() {
     if (taskChangeFingerprint(afterGroups) !== beforeFingerprint) {
       throw new Error("Task-scoped changes changed during verification; results were not recorded. Re-run verify against the current snapshot.");
     }
+    results.push(testIntegrityResult(pendingTestIntegrity(active, collectTestIntegrity(groups))));
     const failed = results.filter((result2) => result2.status === "failed");
     const review = evaluateReviewGate(active, stats, codeFileKeys(groups));
     const completed = recordVerification(feature, results, active.manifestRevision, review);
@@ -3073,7 +3166,7 @@ async function main() {
   if (command === "review") {
     const action = args[1];
     const feature = option("--task");
-    if (!feature || !["status", "record", "waive"].includes(action ?? "")) return usage();
+    if (!feature || !["status", "record", "waive", "allow-tests"].includes(action ?? "")) return usage();
     const manifest = requireTaskManifest(feature);
     const scoped = currentTaskScope(manifest);
     const stats = reviewStats(scoped.groups);
@@ -3083,6 +3176,14 @@ async function main() {
       if (!kind || !FORMAL_REVIEW_KINDS.includes(kind)) throw new Error(`review record requires --kind ${FORMAL_REVIEW_KINDS.join("|")}`);
       const count = (name) => option(name) === null ? null : Number(option(name));
       recordFormalReview(feature, reviewEvidence({ kind, source: "manual", stats, files, blocking: count("--blocking"), nonBlocking: count("--non-blocking") }));
+    }
+    if (action === "allow-tests") {
+      const reason = option("--reason");
+      if (!reason) throw new Error("review allow-tests requires --reason");
+      const findings = pendingTestIntegrity(manifest, collectTestIntegrity(scoped.groups));
+      if (findings.length) recordTestIntegrityAllowance(feature, testIntegrityAllowance(findings, reason));
+      output({ schemaVersion: 1, status: "allowed", findings }, (value) => value.findings.length ? [`Accepted ${value.findings.length} test-integrity finding(s); a later weakening needs a new allowance.`, ...value.findings.map((finding) => `  ${finding.kind.padEnd(17)} ${finding.file}: ${finding.line}`)].join("\n") : "No pending test-integrity findings.");
+      return;
     }
     if (action === "waive") {
       const reason = option("--reason");
@@ -3124,7 +3225,7 @@ async function main() {
     return;
   }
   if (command === "policy" && args[1] === "evaluate") {
-    const payload = validatePolicyEvent(JSON.parse(readFileSync14(0, "utf8")));
+    const payload = validatePolicyEvent(JSON.parse(readFileSync15(0, "utf8")));
     const result = handlePolicyEvent(payload);
     output(result, (value) => `${value.decision.toUpperCase()}: ${value.messages.join("; ") || "policy permits event"}`);
     if (result.decision === "block") process.exitCode = 1;

@@ -393,6 +393,35 @@
               }
             }
           }
+        },
+        "testIntegrity": {
+          "$comment": "User allowances for test-integrity findings (skipped, commented-out or removed tests, changed assertions). Each accepts exactly the findings it lists, as file|kind|line keys.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "recordedAt",
+              "reason",
+              "findings"
+            ],
+            "properties": {
+              "recordedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              },
+              "findings": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
         }
       }
     },

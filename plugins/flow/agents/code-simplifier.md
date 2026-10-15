@@ -31,7 +31,7 @@ Run every `flow` command from the project root (the directory holding `.flow/con
 Propose only simplifications that keep observable behavior, public contracts, timing, and output identical, and that make the code easier to understand. For each proposal give:
 
 - file:line and the symbol;
-- the evidence, for example: no production consumer, a single implementation with no boundary reason, a pass-through wrapper, a duplicated invariant;
+- the evidence, for example: no production consumer, a single implementation with no boundary reason, a pass-through wrapper, a duplicated invariant, a new test whose breakage another test already catches (name both tests and the line to break so the parent can confirm it);
 - the exact replacement, as a before/after snippet or precise edit steps, including callers and tests to update;
 - the behavior fence that the edit preserves.
 

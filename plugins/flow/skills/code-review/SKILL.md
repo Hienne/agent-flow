@@ -61,8 +61,18 @@ Done when: every convention item is marked pass, fail, or not applicable for thi
 3. Flag scope creep: behaviour no AC or DEC asked for.
 4. Flag **screen risk**: layout or styling whose result a logic test cannot show, such as `nowrap` or `overflow` on multi-line content, fixed sizes, or stacked content in a fixed-height row. Name what to look at on the real screen.
 5. Behaviour that changed for an existing feature must be named, even when the spec allows it. An example is a filter that went from `includes` to `startsWith`.
+6. Build the **test map**, one row per test the diff added or changed, and judge each against `P-test-earns-its-place`:
 
-Done when: the AC map has one row per criterion and every row is filled or flagged.
+   | Test (file › name) | AC or test-plan row | Breakage it catches | Seen red | Verdict |
+   |---|---|---|---|---|
+
+   - **AC or test-plan row**: the `AC-###` it proves, or the row of the test plan the `tdd` skill puts in the worklog. A test that maps to neither is an **orphan**.
+   - **Seen red**: the recorded red-first run or kill check, or `none`.
+   - **Verdict**: keep, rewrite (name the seam that sees the breakage), or delete (name the test that already catches it).
+   - A test is a finding when it is **tautological** (the expected value restates the code's computation, or the assertion checks only a mock the test configured), **implementation-coupled** (mocks the project's own modules, asserts call counts or order on internals, reaches past the interface), a **duplicate** of a test that goes red for the same breakage, an orphan, or has no red run.
+   - Read changed assertions in pre-existing tests against the spec: an expected value that moved without an `AC-###` or `DEC-###` behind it is a test bent to fit the code.
+
+Done when: the AC map has one row per criterion, the test map has one row per added or changed test, and every row is filled or flagged.
 
 ## Severity
 
@@ -70,7 +80,9 @@ Done when: the AC map has one row per criterion and every row is filled or flagg
   - a breach of a written convention rule;
   - a contradiction of an `AC-###` or `DEC-###`;
   - a defect such as wrong output, a crash, or lost data;
-  - a test missing for an AC branch that the spec's verification section names.
+  - a test missing for an AC branch that the spec's verification section names;
+  - a test the AC map cites as an AC's proof that cannot go red (tautological, or asserting only on its own mock), since the AC is then untested;
+  - an existing assertion changed to a new expected value that no `AC-###` or `DEC-###` asks for.
 - **Non-blocking** is everything else: judgement calls, smells, screen-risk checks, and missing tests the spec does not demand.
 - **Conflicts:** when the spec deliberately requires something a convention forbids, report it Non-blocking as a **conflict**. Cite both, and leave the choice to the developer.
 - Trust the declared contracts between components and services. A value that its type rules out is not a finding.
@@ -87,6 +99,7 @@ Keep the two axes separate and never rerank across them:
 ### Blocking
 ### Non-blocking
 ### AC map
+### Test map
 ## Coverage
 ```
 

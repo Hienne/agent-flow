@@ -30,7 +30,7 @@ This project uses the `flow` plugin. `.flow/config.json` marks the project root;
 
 Do a simplicity pass on every changed path against these principles (`/flow:principles` has the rule, reason and example for each). Reviews and simplifications cite them by ID.
 
-- `P-dumb-version-first`, `P-rule-of-three`, `P-deletion-test`: seams and abstractions need current evidence. Run `/flow:overengineering-review` before adding or widening a seam.
+- `P-dumb-version-first`, `P-rule-of-three`, `P-deletion-test`, `P-test-earns-its-place`: seams, abstractions and tests need current evidence. Run `/flow:overengineering-review` before adding or widening a seam.
 - `P-trust-contracts`, `P-explicit-over-hidden-state`, `P-no-mirror-models`: less code, fewer guards.
 - `P-convention-over-sibling`, `P-named-value-sets`, `P-reuse-before-writing`: fit the project.
 - `P-confirm-before-widening`, `P-ask-before-out-of-scope-data`, `P-own-checkout-only`: stay within what the user asked.

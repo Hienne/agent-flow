@@ -52,6 +52,7 @@ test('core rules apply with an empty policy', () => {
     ['git status && git push origin HEAD', 'unit-a', 'block'],
     ['flow review record --task x --kind code-review', '', 'block'],
     ['flow review waive --task x --reason y', '', 'block'],
+    ['flow review allow-tests --task x --reason y', '', 'block'],
     ['bash -c "git status && git push"', '', 'block'],
     ['powershell -Command "git push"', '', 'block'],
     ['echo "git push" > notes.md', '', 'allow'],

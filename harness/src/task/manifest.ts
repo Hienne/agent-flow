@@ -5,7 +5,8 @@ import { ensureDirectory, fileHash, readJson, writeJsonAtomic } from '../shared/
 import { ARTIFACTS_ROOT, ROOT, WORKTREES_DIRECTORY, isWithin, logicalRelativePath, normalizePath, slugify } from '../shared/paths.js';
 import { run } from '../shared/process.js';
 import type { ReviewGate } from '../review/gate.js';
-import type { BaselineFile, FormalReviewEvidence, TaskHandoff, TaskIsolation, TaskManifest, TaskTarget, VerificationStep, WorkspaceChange } from '../shared/types.js';
+import { TEST_INTEGRITY_STEP } from '../review/test-integrity.js';
+import type { BaselineFile, FormalReviewEvidence, TaskHandoff, TestIntegrityAllowance, TaskIsolation, TaskManifest, TaskTarget, VerificationStep, WorkspaceChange } from '../shared/types.js';
 import { activeIsolation, createIsolation, physicalWorkspaceRoot, removeIsolation } from './isolation.js';
 
 const FEATURE_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -119,6 +120,11 @@ function validateTaskManifest(value: unknown, path: string): TaskManifest {
       && ['code-review', 'code-simplification', 'waiver'].includes(item.kind) && ['subagent', 'manual', 'user'].includes(item.source)
       && typeof item.recordedAt === 'string' && Number.isInteger(item.codeLines) && Number.isInteger(item.codeFiles) && Array.isArray(item.files)))) {
     throw new Error(`Invalid task manifest ${path}: invalid formal review evidence`);
+  }
+  const testIntegrity = manifest.evidence.testIntegrity;
+  if (testIntegrity !== undefined && (!Array.isArray(testIntegrity) || !testIntegrity.every((item) => item
+      && typeof item.recordedAt === 'string' && typeof item.reason === 'string' && Array.isArray(item.findings)))) {
+    throw new Error(`Invalid task manifest ${path}: invalid test-integrity allowances`);
   }
   // Legacy overengineering-review records are no longer consumed; formal review evidence lives in formalReviews.
   delete (manifest.evidence as TaskManifest['evidence'] & { reviews?: unknown }).reviews;
@@ -344,6 +350,14 @@ export function recordFormalReview(feature: string, evidence: FormalReviewEviden
   });
 }
 
+export function recordTestIntegrityAllowance(feature: string, allowance: TestIntegrityAllowance): TaskManifest {
+  return updateTaskManifest(feature, (manifest) => {
+    if (manifest.state === 'completed') throw new Error(`Task ${manifest.taskId} is completed; test-integrity allowances can no longer change it`);
+    manifest.evidence.testIntegrity = [...(manifest.evidence.testIntegrity ?? []), allowance];
+    return manifest;
+  });
+}
+
 // Passing verification completes the task only when the formal review gate is satisfied for the same change set.
 export function recordVerification(feature: string, results: Array<{ id: string; status: string; cached: boolean }>, expectedRevision?: number, reviewGate?: ReviewGate): TaskManifest {
   return updateTaskManifest(feature, (manifest) => {
@@ -352,7 +366,7 @@ export function recordVerification(feature: string, results: Array<{ id: string;
     }
     if (!results.length) throw new Error('Cannot record verification without at least one verification or no-applicable-steps result');
     const expected = manifest.plan.verification.map((step) => step.id).sort();
-    const actual = results.map((result) => result.id).sort();
+    const actual = results.filter((result) => result.id !== TEST_INTEGRITY_STEP).map((result) => result.id).sort();
     const complete = expected.length
       ? expected.length === actual.length && expected.every((id, index) => id === actual[index])
       : actual.length === 1 && actual[0] === 'task-scope:no-applicable-steps';

@@ -13,6 +13,7 @@ import { run } from '../src/shared/process.js';
 import { createIsolation, isolationBranch, removeIsolation, worktreePath } from '../src/task/isolation.js';
 import { acquireTaskIsolation, beginVerification, findActiveTaskForTarget, findSharedIsolation, isolationGroup, loadTaskManifest, recordFormalReview, recordInspection, recordVerification, setTaskHandoff, startTaskManifest, taskManifestPath, updateTaskManifest } from '../src/task/manifest.js';
 import { scopeChangesToTask } from '../src/task/scope.js';
+import { scanTestDiff, testIntegrityResult } from '../src/review/test-integrity.js';
 import { bindSessionTask, commandTaskFeature, evaluateReviewGate, evaluateStop, markReviewerStarted, markReviewerStopped, parseReviewResult, reviewEvidence } from '../src/review/gate.js';
 import { loadProjects } from '../src/topology/workspaces.js';
 import { planVerification } from '../src/verification/planner.js';
@@ -479,6 +480,23 @@ test('passing verification without review evidence parks the task in reviewing',
   const completed = recordVerification(feature, [{ id: 'fixture:check', status: 'passed', cached: false }], again.manifestRevision, gate);
   assert.equal(completed.state, 'completed');
   assert.throws(() => recordFormalReview(feature, reviewEvidence({ kind: 'code-review', source: 'manual', stats, files: [] })), /completed/);
+});
+
+test('a weakened test fails verification; a clean integrity check never makes it incomplete', () => {
+  const feature = `harness-integrity-${process.pid}`;
+  startTaskManifest({
+    feature,
+    source: 'conversation',
+    inspections: [{ status: 'ok', target: 'fixture/apps/demo', workspace: { root: 'fixture' }, project: { name: 'demo' }, changes: { files: [] }, verification: [] }],
+  });
+  recordInspection(feature, [{ id: 'fixture:check', kind: 'configuration-error', workspace: 'fixture', project: null, message: 'check' }]);
+  const weakened = testIntegrityResult(scanTestDiff('a.test.ts', ["it.skip('sums', () => {});"], []));
+  const blocked = recordVerification(feature, [{ id: 'fixture:check', status: 'passed', cached: false }, weakened], beginVerification(feature).manifestRevision);
+  assert.equal(blocked.state, 'active');
+  assert.equal(blocked.taskHandoff.reason, 'verification-failed');
+  const clean = testIntegrityResult([]);
+  const completed = recordVerification(feature, [{ id: 'fixture:check', status: 'passed', cached: false }, clean], beginVerification(feature).manifestRevision);
+  assert.equal(completed.state, 'completed');
 });
 
 test('reviewer result marker and task command parsing', () => {
