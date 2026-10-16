@@ -2760,7 +2760,7 @@ async function executeVerificationPlan(plan, options2 = {}) {
 // harness/src/cli.ts
 var args = process.argv[2] === "clean" ? ["task", "cleanup", ...process.argv.slice(3)] : process.argv.slice(2);
 var command = args[0];
-var VERSION = true ? "0.1.0" : "dev";
+var VERSION = true ? "0.2.0" : "dev";
 var json = args.includes("--json");
 var BOOLEAN_OPTIONS = { "--json": true, "--force": true, "--plan": true, "--dry-run": true, "--continue": true, "--isolate": true, "--no-isolate": true, "--all": true, "--shim": true };
 function option(name) {

@@ -7,8 +7,9 @@
       "expected_output": "Flags test (a) as tautological and (b) as a duplicate of the summing branch, proves both with kill checks or mutation runs before any delete verdict, keeps (c), writes the report under the artifacts directory, and stops for approval without editing tests.",
       "files": [],
       "assertions": [
-        "A baseline run of the scope's tests is recorded with its test count and duration.",
+        "A single baseline run with the runner's JSON report records the test count, duration and per-file timing.",
         "Test (a) is classified as tautological because its expected value restates the code's computation.",
+        "Kill checks run the related tests of the broken file (`--findRelatedTests`), not the whole suite, and go through kill-check.mjs.",
         "Every delete verdict carries a pasted run (kill check or mutation result) naming which tests went red.",
         "Test (c) is kept as the only test that goes red when the discount branch breaks.",
         "No test file is changed before the user approves the report."
@@ -34,6 +35,17 @@
         "No dependency is installed without the user's yes.",
         "Suspects are measured with kill checks: a guarded line broken, the tests run, the red tests recorded, the line restored.",
         "The working tree has no leftover change from the kill checks."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Audit the tests in apps/shop. It is an Nx workspace with jest; `npx jest --version` fails because node_modules/.bin is missing, and `npm install` fails with ERESOLVE.",
+      "expected_output": "Stops at the preflight, tells the user the runner cannot start and what is broken, and does not try to repair dependencies itself.",
+      "files": [],
+      "assertions": [
+        "No `npm install` or other dependency change is run without the user's yes.",
+        "The answer names the missing node_modules/.bin and the ERESOLVE failure as the blocker.",
+        "No kill check or classification verdict is reported as measured."
       ]
     }
   ]
