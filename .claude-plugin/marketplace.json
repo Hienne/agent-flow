@@ -12,7 +12,7 @@
       "name": "flow",
       "source": "./plugins/flow",
       "description": "Core workflow: task harness, verify, review gate, workflow skills and agents",
-      "version": "0.1.0"
+      "version": "0.2.0"
     },
     {
       "name": "flow-ui",
